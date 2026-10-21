@@ -289,9 +289,14 @@ $('btn-again').addEventListener('click', () => {
   $('file-input').click();
 });
 
+// ========== 新增：更换照片按钮点击 ==========
+$('btn-change-photo').addEventListener('click', () => {
+  // 借用同一个 file-input，但当前是在修改状态
+  $('file-input').click();
+});
+
 // ========== 结果页返回按钮逻辑 ==========
 $('btn-back-result').addEventListener('click', () => {
-  console.log('结果页返回按钮被点击了');
   const wasEditing = state.editingId;
   state.editingId = null; 
   if (wasEditing) {
@@ -359,8 +364,19 @@ $('file-input').addEventListener('change', async e => {
   });
 
   const img = await loadImage(rawURL);
-  state.dataURL = compress(img);
+  const newDataURL = compress(img);
 
+  // 🌟 核心逻辑：如果是修改模式，原地替换照片，不清空标签
+  if (state.editingId) {
+    state.dataURL = newDataURL;
+    $('result-img').src = newDataURL;
+    state.saved = false; // 重新标记为未保存，以便保存按钮生效
+    toast('✓ 照片已更换，记得点击保存修改');
+    return;
+  }
+
+  // 如果是新建模式，走原来的分析流程
+  state.dataURL = newDataURL;
   $('scan-img').src = state.dataURL;
   view('analyzing');
 
@@ -424,6 +440,7 @@ $('btn-save').addEventListener('click', () => {
     if (index !== -1) {
       records[index].breed = animalName;
       records[index].location = location;
+      records[index].photo = state.dataURL; // 保存新照片
       records[index].personality = [...state.personality];
       records[index].voice = [...state.voice];
       records[index].appetite = [...state.appetite];
