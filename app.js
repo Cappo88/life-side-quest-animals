@@ -258,7 +258,8 @@ function editRecord(id) {
   
   $('result-img').src = record.photo;
   $('animal-name').value = record.breed;
-  $('location-input').value = record.location;
+  $('location-input').value = record.location || '';
+  $('notes-input').value = record.notes || '';
   renderLocationChips(); 
   
   state.personality = new Set(record.personality || []);
@@ -273,8 +274,17 @@ function editRecord(id) {
   renderRandomChips('appetite-chips', 'appetite', 8);
   renderRandomChips('vibe-chips', 'vibe', 8);
 
+  const historyPanel = $('history-panel');
+  const historyList = $('history-list');
+  if (record.history && record.history.length > 0) {
+    historyPanel.style.display = 'block';
+    historyList.innerHTML = record.history.map(h => `<li>${h}</li>`).join('');
+  } else {
+    historyPanel.style.display = 'none';
+  }
+
   $('result-status-chip').textContent = '✍️ 回顾 / 修改';
-  $('btn-save').textContent = '保存修改';
+  $('btn-save').innerHTML = '💾 保存修改';
   state.saved = false;
 
   view('result');
@@ -284,18 +294,58 @@ $('btn-start').addEventListener('click', () => {
   state.editingId = null;
   $('file-input').click();
 });
+
+// ========== 防误触核心逻辑（自定义萌系弹窗） ==========
 $('btn-again').addEventListener('click', () => {
-  state.editingId = null;
-  $('file-input').click();
+  const hasContent = $('animal-name').value.trim() !== '' || 
+                     state.personality.size > 0 || 
+                     state.voice.size > 0 || 
+                     state.appetite.size > 0 || 
+                     state.vibe.size > 0;
+                     
+  if (!state.saved && hasContent) {
+    showCustomModal();
+  } else {
+    state.editingId = null;
+    $('file-input').click();
+  }
 });
 
-// ========== 新增：更换照片按钮点击 ==========
+// 动态生成弹窗
+function showCustomModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'custom-modal-overlay';
+  overlay.innerHTML = `
+    <div class="custom-modal-box">
+      <div class="custom-modal-text">你还有未保存的记录哦，<br>确定要放弃并开启新图鉴吗？</div>
+      <div class="custom-modal-actions">
+        <button class="btn-modal-cancel" id="modal-save">不是，需要立刻保存喵！</button>
+        <button class="btn-modal-confirm" id="modal-confirm">确定，喵喵喵。</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  
+  setTimeout(() => overlay.classList.add('show'), 10);
+
+  overlay.querySelector('#modal-save').addEventListener('click', () => {
+    overlay.classList.remove('show');
+    setTimeout(() => document.body.removeChild(overlay), 300);
+    $('btn-save').click(); 
+  });
+
+  overlay.querySelector('#modal-confirm').addEventListener('click', () => {
+    overlay.classList.remove('show');
+    setTimeout(() => document.body.removeChild(overlay), 300);
+    state.editingId = null;
+    setTimeout(() => $('file-input').click(), 300);
+  });
+}
+
 $('btn-change-photo').addEventListener('click', () => {
-  // 借用同一个 file-input，但当前是在修改状态
   $('file-input').click();
 });
 
-// ========== 结果页返回按钮逻辑 ==========
 $('btn-back-result').addEventListener('click', () => {
   const wasEditing = state.editingId;
   state.editingId = null; 
@@ -366,16 +416,14 @@ $('file-input').addEventListener('change', async e => {
   const img = await loadImage(rawURL);
   const newDataURL = compress(img);
 
-  // 🌟 核心逻辑：如果是修改模式，原地替换照片，不清空标签
-  if (state.editingId) {
+  if ($('view-result').classList.contains('active')) {
     state.dataURL = newDataURL;
     $('result-img').src = newDataURL;
-    state.saved = false; // 重新标记为未保存，以便保存按钮生效
-    toast('✓ 照片已更换，记得点击保存修改');
+    state.saved = false; 
+    toast('✓ 照片已更换，记得保存哦');
     return;
   }
 
-  // 如果是新建模式，走原来的分析流程
   state.dataURL = newDataURL;
   $('scan-img').src = state.dataURL;
   view('analyzing');
@@ -390,11 +438,13 @@ $('file-input').addEventListener('change', async e => {
     state.saved = false;
     
     $('result-status-chip').textContent = '✓ 记录完成';
-    $('btn-save').textContent = '收进我的图鉴';
+    $('btn-save').innerHTML = '💾 收进图鉴';
+    $('history-panel').style.display = 'none';
 
     $('result-img').src = state.dataURL;
     $('animal-name').value = '';
     $('location-input').value = '';
+    $('notes-input').value = '';
     
     renderLocationChips();
     
@@ -432,28 +482,49 @@ $('btn-save').addEventListener('click', () => {
 
   const animalName = $('animal-name').value.trim() || '神秘动物伙伴';
   const location = $('location-input').value.trim() || '未记录地点';
+  const notes = $('notes-input').value.trim();
 
   const records = getRecords();
+  const todayStr = new Date().toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
 
-  if (state.editingId) {
+  const isEditing = state.editingId && records.findIndex(r => r.id === state.editingId) !== -1;
+
+  if (isEditing) {
     const index = records.findIndex(r => r.id === state.editingId);
-    if (index !== -1) {
-      records[index].breed = animalName;
-      records[index].location = location;
-      records[index].photo = state.dataURL; // 保存新照片
-      records[index].personality = [...state.personality];
-      records[index].voice = [...state.voice];
-      records[index].appetite = [...state.appetite];
-      records[index].vibe = [...state.vibe];
+    const oldName = records[index].breed;
+    const oldLoc = records[index].location;
+    
+    let changes = [];
+    if (oldName !== animalName) changes.push(`名字: ${oldName}→${animalName}`);
+    if (oldLoc !== location) changes.push(`地点: ${oldLoc}→${location}`);
+    if (changes.length > 0) {
+      if (!records[index].history) records[index].history = [];
+      records[index].history.unshift(`${todayStr} 修改了 ${changes.join(', ')}`);
+      records[index].history = records[index].history.slice(0, 10);
     }
+
+    records[index].breed = animalName;
+    records[index].location = location;
+    records[index].photo = state.dataURL;
+    records[index].notes = notes; 
+    records[index].lastSeen = new Date().toISOString(); 
+    records[index].personality = [...state.personality];
+    records[index].voice = [...state.voice];
+    records[index].appetite = [...state.appetite];
+    records[index].vibe = [...state.vibe];
+    
     toast(`好耶！对${animalName}更了解啦！`);
   } else {
     records.unshift({
       id: Date.now(),
-      date: new Date().toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }),
+      date: todayStr,
+      createdAt: new Date().toISOString(), 
+      lastSeen: new Date().toISOString(), 
       photo: state.dataURL,
       breed: animalName,
       location: location,
+      notes: notes,
+      history: [],
       personality: [...state.personality],
       voice: [...state.voice],
       appetite: [...state.appetite],
@@ -572,14 +643,37 @@ function renderGallery() {
 
     const extra = [...(r.personality || []), ...(r.voice || []), ...(r.appetite || []), ...(r.vibe || [])];
     
+    let days = 0;
+    const startDate = r.createdAt || r.lastSeen; 
+    if (startDate) {
+      days = Math.floor((new Date() - new Date(startDate)) / (1000 * 60 * 60 * 24));
+    }
+    
+    let daysBadge = '';
+    if (days >= 15) {
+      const hue = ((days - 15) * 25) % 360; 
+      const borderColor = `hsl(${hue}, 60%, 55%)`;
+      const shadowColor = `hsl(${hue}, 60%, 40%)`;
+      const bgColor = `hsl(${hue}, 60%, 92%)`;
+      const textColor = `hsl(${hue}, 60%, 30%)`;
+      
+      item.style.borderColor = borderColor;
+      item.style.boxShadow = `3px 3px 0 ${shadowColor}`;
+      
+      daysBadge = `<span class="badge-days" style="background:${bgColor}; color:${textColor}; border: 1px solid ${borderColor};">🌈 已收录 ${days} 天</span>`;
+    } else if (days > 0) {
+      daysBadge = `<span class="badge-days" style="background:var(--paper); color:var(--ink2); border: 1px solid var(--line);">已收录 ${days} 天</span>`;
+    }
+
     item.innerHTML = `
       <img src="${r.photo}" alt="">
       <div class="gal-info">
-        <div class="gal-name">${escapeHTML(r.breed)}</div>
+        <div class="gal-name">${escapeHTML(r.breed)} ${daysBadge}</div>
         <div class="gal-meta">
           ${extra.slice(0, 5).map(t => `<span>${escapeHTML(t)}</span>`).join('')}
         </div>
         <div class="gal-date">📍 ${escapeHTML(r.location || '未知地点')} · ${r.date} 遇见</div>
+        ${r.notes ? `<div class="gal-notes">📝 ${escapeHTML(r.notes)}</div>` : ''}
       </div>
       <button class="del-btn" data-id="${r.id}" title="删除这条记录">✕</button>
     `;
