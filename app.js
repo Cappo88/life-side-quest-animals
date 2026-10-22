@@ -58,8 +58,11 @@ function initCustomWords() {
 
 function view(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  $('view-' + name).classList.add('active');
+  $('#view-' + name).classList.add('active');
   window.scrollTo({ top: 0, behavior: 'instant' });
+
+  // 🌟 新增：给 body 打上当前页面的标签，用于 css 控制
+  document.body.className = 'view-' + name;
 }
 
 let toastTimer;

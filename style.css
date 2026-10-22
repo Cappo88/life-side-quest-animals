@@ -187,6 +187,7 @@ body{
    ========================================= */
 .floating-save {
   position: fixed !important;
+  display: none !important; /* 新增：默认隐藏 */
   right: 20px !important;
   bottom: 30px !important;
   width: auto !important;
@@ -293,4 +294,22 @@ body{
   fill: none;
   vertical-align: -2px;
   margin-right: 3px;
+}
+
+/* =========================================
+   🌟 第二步修改新增：去掉背景滤镜的装饰元素
+   ========================================= */
+.deco {
+  position: fixed; 
+  font-size: 80px; 
+  opacity: 0.6; 
+  z-index: 0; 
+  pointer-events: none;
+}
+
+/* =========================================
+   🌟 第二步修改新增：当处在结果页时，显示悬浮按钮
+   ========================================= */
+body.view-result .floating-save {
+  display: block !important;
 }
