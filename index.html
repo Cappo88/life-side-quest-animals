@@ -155,9 +155,8 @@
       <ul id="history-list" style="padding-left: 16px; font-size: 12px; color: var(--ink2); line-height: 1.8;"></ul>
     </div>
 
-    <button class="btn-main floating-save" id="btn-save">收进图鉴</button>
-
-    <div style="margin-top: 50px; margin-bottom: 80px; text-align: center;">
+    <!-- 留出空间给悬浮按钮 -->
+    <div style="margin-top: 50px; margin-bottom: 120px; text-align: center;">
       <button id="btn-again" style="background: none; border: none; color: var(--ink2); font-size: 14px; font-family: inherit; cursor: pointer; text-decoration: underline; opacity: 0.7;">放弃当前内容并开启新图鉴</button>
     </div>
   </section>
@@ -175,9 +174,12 @@
   </section>
 </div>
 
-<!-- 🌟 底部装饰图。注意：你需要在文件夹里放入真实的图片，并重命名为对应的名字。如果没有图片，它不会加载，但也不影响页面使用了。 -->
-<img src="plant.png" class="deco-bottom deco-left" alt="">
-<img src="cat.png" class="deco-bottom deco-right" alt="">
+<!-- 🌟 悬浮按钮放在这里，脱离动画容器，保证绝对悬浮 -->
+<button class="btn-main floating-save" id="btn-save">收进图鉴</button>
+
+<!-- 🌟 底部装饰图（带 onerror 隐藏，无图时不显示文字） -->
+<img src="plant.png" class="deco-bottom deco-left" alt="" onerror="this.style.display='none'">
+<img src="cat.png" class="deco-bottom deco-right" alt="" onerror="this.style.display='none'">
 
 <input type="file" id="file-input" accept="image/*" hidden>
 <div class="toast" id="toast"></div>

@@ -181,7 +181,7 @@ body{
 .toast.show{opacity:1;transform:translate(-50%,0);}
 
 /* =========================================
-   🌟 修复悬浮按钮
+   🌟 悬浮按钮
    ========================================= */
 .floating-save {
   position: fixed !important;
@@ -209,6 +209,7 @@ body{
 
 #view-result { padding-bottom: 120px; }
 
+/* 只有 body 带有 view-result 标签时，才显示悬浮按钮 */
 body.view-result .floating-save {
   display: block !important;
 }
@@ -226,7 +227,7 @@ body.view-result .floating-save {
 .btn-modal-cancel:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--line); }
 
 /* =========================================
-   🌟 手绘感互动复选框（纯 CSS 动画）
+   🌟 手绘感互动复选框
    ========================================= */
 .hand-checkbox {
   display: flex;
@@ -298,17 +299,17 @@ body.view-result .floating-save {
 }
 
 /* =========================================
-   🌟 左下角和右下角装饰图（优化版，防止加载失败破坏页面）
+   🌟 左下角和右下角装饰图（带防破图保护）
    ========================================= */
 .deco-bottom {
   position: fixed;
   bottom: 40px;
-  width: 120px; /* 强制设定宽度 */
-  height: 120px; /* 强制设定高度 */
+  width: 120px; 
+  height: 120px; 
   z-index: 0; 
   pointer-events: none; 
   opacity: 0.9; 
-  object-fit: contain; /* 如果图片比例不对，会自动缩放 */
+  object-fit: contain; 
 }
 .deco-left { left: -15px; }
 .deco-right { right: -15px; }

@@ -31,15 +31,15 @@ function initCustomWords() {
   } catch(e) {}
 }
 
-// 🌟 修复：极简且兼容性最高的页面切换
+// 🌟 极简且兼容性最高的页面切换，同时控制悬浮按钮的显隐
 function view(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const target = $('view-' + name);
   if (target) target.classList.add('active');
   
-  window.scrollTo(0, 0); // 兼容性更好的置顶
+  window.scrollTo(0, 0); 
   
-  // 仅操作 view-result 类，不碰其他可能存在的类
+  // 如果进入结果页，给 body 加上 view-result 类以显示悬浮按钮
   if (name === 'result') {
     document.body.classList.add('view-result');
   } else {
@@ -488,7 +488,7 @@ function renderCorkboard() {
 
 function renderGallery() {
   const list = $('gallery-list'); 
-  if (!list) return; // 核心防错
+  if (!list) return; 
   list.innerHTML = '';
   const records = getRecords();
 
