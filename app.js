@@ -56,13 +56,20 @@ function initCustomWords() {
   } catch(e) {}
 }
 
+// 🌟 修复：修改 view 函数，添加 body 标签控制悬浮按钮显隐
 function view(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  $('#view-' + name).classList.add('active');
+  $('view-' + name).classList.add('active');
   window.scrollTo({ top: 0, behavior: 'instant' });
-
-  // 🌟 新增：给 body 打上当前页面的标签，用于 css 控制
-  document.body.className = 'view-' + name;
+  
+  // 清除旧的 view-xxx 标签
+  Array.from(document.body.classList).forEach(cls => {
+    if (cls.startsWith('view-')) {
+      document.body.classList.remove(cls);
+    }
+  });
+  // 添加新的 view-xxx 标签
+  document.body.classList.add('view-' + name);
 }
 
 let toastTimer;

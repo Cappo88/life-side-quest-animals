@@ -26,17 +26,16 @@ body{
   box-shadow: -2px 0 10px rgba(0,0,0,0.05), 2px 0 10px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.05);
 }
 
-/* ---------- 视图切换与 3D 翻页 ---------- */
+/* ---------- 视图切换（已修复手机端白屏问题） ---------- */
 .view{display:none;}
 .view.active{
   display:block; 
-  transform-style: preserve-3d; 
-  transform-origin: left center;
-  animation: pageTurn 0.6s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+  /* 🌟 删除了 preserve-3d，改用兼容性更好的 2D 动画 */
+  animation: fadeInUp 0.4s ease-out forwards;
 }
-@keyframes pageTurn {
-  0% { opacity: 0; transform: perspective(1200px) rotateY(-15deg) translateX(30px); box-shadow: -10px 10px 20px rgba(0,0,0,0.1); }
-  100% { opacity: 1; transform: perspective(1200px) rotateY(0deg) translateX(0); box-shadow: none; }
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(15px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 /* ---------- 通用 ---------- */
@@ -187,7 +186,7 @@ body{
    ========================================= */
 .floating-save {
   position: fixed !important;
-  display: none !important; /* 新增：默认隐藏 */
+  display: none !important; /* 默认隐藏 */
   right: 20px !important;
   bottom: 30px !important;
   width: auto !important;
@@ -210,6 +209,11 @@ body{
 }
 
 #view-result { padding-bottom: 120px; }
+
+/* 当 body 有 view-result 标签时显示按钮 */
+body.view-result .floating-save {
+  display: block !important;
+}
 
 /* 弹窗 */
 .custom-modal-overlay { position: fixed; inset: 0; background: rgba(42, 37, 32, 0.4); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease; pointer-events: none; }
@@ -297,19 +301,26 @@ body{
 }
 
 /* =========================================
-   🌟 第二步修改新增：去掉背景滤镜的装饰元素
+   🌟 左下角和右下角装饰图（新增）
    ========================================= */
-.deco {
-  position: fixed; 
-  font-size: 80px; 
-  opacity: 0.6; 
+.deco-bottom-left {
+  position: fixed;
+  left: -15px; 
+  bottom: 40px; 
+  width: 120px; 
+  height: auto;
   z-index: 0; 
-  pointer-events: none;
+  pointer-events: none; 
+  opacity: 0.9; 
 }
 
-/* =========================================
-   🌟 第二步修改新增：当处在结果页时，显示悬浮按钮
-   ========================================= */
-body.view-result .floating-save {
-  display: block !important;
+.deco-bottom-right {
+  position: fixed;
+  right: -15px; 
+  bottom: 40px;
+  width: 120px; 
+  height: auto;
+  z-index: 0; 
+  pointer-events: none; 
+  opacity: 0.9; 
 }
