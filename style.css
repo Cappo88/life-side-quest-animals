@@ -26,16 +26,15 @@ body{
   box-shadow: -2px 0 10px rgba(0,0,0,0.05), 2px 0 10px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.05);
 }
 
-/* ---------- 视图切换（已修复手机端白屏问题） ---------- */
+/* ---------- 视图切换（极简淡入，绝对不白屏） ---------- */
 .view{display:none;}
 .view.active{
   display:block; 
-  /* 🌟 删除了 preserve-3d，改用兼容性更好的 2D 动画 */
-  animation: fadeInUp 0.4s ease-out forwards;
+  animation: simpleFade 0.3s ease-out;
 }
-@keyframes fadeInUp {
-  0% { opacity: 0; transform: translateY(15px); }
-  100% { opacity: 1; transform: translateY(0); }
+@keyframes simpleFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ---------- 通用 ---------- */
@@ -210,7 +209,6 @@ body{
 
 #view-result { padding-bottom: 120px; }
 
-/* 当 body 有 view-result 标签时显示按钮 */
 body.view-result .floating-save {
   display: block !important;
 }
@@ -287,7 +285,6 @@ body.view-result .floating-save {
   transition: color 0.2s;
 }
 
-/* 图鉴卡片上的定位图标 */
 .loc-icon {
   width: 13px;
   height: 13px;
@@ -301,26 +298,17 @@ body.view-result .floating-save {
 }
 
 /* =========================================
-   🌟 左下角和右下角装饰图（新增）
+   🌟 左下角和右下角装饰图（优化版，防止加载失败破坏页面）
    ========================================= */
-.deco-bottom-left {
+.deco-bottom {
   position: fixed;
-  left: -15px; 
-  bottom: 40px; 
-  width: 120px; 
-  height: auto;
-  z-index: 0; 
-  pointer-events: none; 
-  opacity: 0.9; 
-}
-
-.deco-bottom-right {
-  position: fixed;
-  right: -15px; 
   bottom: 40px;
-  width: 120px; 
-  height: auto;
+  width: 120px; /* 强制设定宽度 */
+  height: 120px; /* 强制设定高度 */
   z-index: 0; 
   pointer-events: none; 
   opacity: 0.9; 
+  object-fit: contain; /* 如果图片比例不对，会自动缩放 */
 }
+.deco-left { left: -15px; }
+.deco-right { right: -15px; }
