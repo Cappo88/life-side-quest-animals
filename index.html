@@ -6,7 +6,204 @@
 <meta name="theme-color" content="#DCE0C8">
 <title>今天遇见猫咪了吗</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐾</text></svg>">
-<link rel="stylesheet" href="style.css">
+
+<style>
+/* =========================================
+   🌟 所有 CSS 直接内联，杜绝手机加载失败
+   ========================================= */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+:root{
+  --paper: #DCE0C8; --ink: #2B3A21; --ink2: #5C6B52; --orange: #465B36; 
+  --orangeL: #C8D1B0; --line: #A6B591; --white: #F5F6EE;        
+}
+
+html,body{height:100%;}
+body{
+  font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background-color: var(--paper); color: var(--ink); -webkit-font-smoothing:antialiased; 
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+}
+
+/* 限制滚动在 app 内部，不影响悬浮 */
+.app{
+  position:relative; z-index:1; max-width:520px; margin:0 auto; padding:0 20px 48px; min-height:100%;
+  background: rgba(253, 247, 238, 0.4);
+  box-shadow: -2px 0 10px rgba(0,0,0,0.05), 2px 0 10px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.05);
+  overflow-x: hidden; 
+}
+
+.view{display:none;}
+.view.active{display:block; animation: simpleFade 0.3s ease-out;}
+@keyframes simpleFade { from { opacity: 0; } to { opacity: 1; } }
+
+.task-chip{ display:inline-block;font-size:13px;font-weight:700;letter-spacing:.08em; color:var(--ink);background:var(--orangeL); padding:6px 14px;border-radius:255px 15px 225px 15px / 15px 225px 15px 255px; border: 1.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+.task-chip.done{color:var(--white);background:var(--orange);}
+
+.btn-main{
+  width:100%;border: 2px solid var(--ink);border-radius:15px 25px 20px 30px / 30px 20px 25px 15px;
+  padding:16px; background:var(--orange);color:var(--white);font-size:18px;font-weight:700;letter-spacing:.04em;
+  font-family:inherit;cursor:pointer; box-shadow: 4px 4px 0 var(--ink); transition:transform .1s, box-shadow .1s;
+}
+.btn-main:active{transform:translate(4px, 4px);box-shadow: 0 0 0 var(--ink);}
+
+.link-btn{ background:none;border:none;color:var(--ink2);font-size:15px;font-weight:600; font-family:inherit;cursor:pointer;padding:8px;text-decoration:none; border-bottom: 2px dashed var(--line); }
+
+.home-top{padding:44px 0 0;}
+.home-title{margin-top:20px;font-size:42px;line-height:1.2;font-weight:800;letter-spacing:-.01em; text-shadow: 1px 1px 0 var(--white);}
+.home-title em{font-style:normal;color:var(--orange);position:relative;display:inline-block;}
+.home-sub{margin-top:14px;color:var(--ink2);font-size:16px;letter-spacing:.05em;}
+
+.paw-stage{position:relative;height:250px;display:flex;align-items:center;justify-content:center;margin:10px 0 0;}
+.paw-ring-outer{position:absolute; width:250px; height:250px; border-radius:50%; border:2px dashed var(--line); animation:spin 35s linear infinite;}
+.paw-ring-inner{position:absolute; width:190px; height:190px; animation:spin-reverse 28s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes spin-reverse{to{transform:rotate(-360deg);}}
+
+.paw-icon{position:relative; z-index:2; animation:pawFloat 3.2s ease-in-out infinite;}
+@keyframes pawFloat{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-10px) rotate(3deg);}}
+
+.home-foot{margin-top:10px;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.stat{font-size:14px;color:var(--ink2);letter-spacing:.03em;}
+.stat b{color:var(--orange);font-size:18px;font-weight:800;margin:0 2px;}
+
+#view-analyzing{padding-top:80px;}
+.scan-wrap{position:relative;border-radius:15px 25px 20px 30px / 30px 20px 25px 15px;overflow:hidden;border: 2px solid var(--ink);box-shadow: 4px 4px 0 var(--ink);aspect-ratio:1/1;background:var(--orangeL);}
+.scan-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+.scan-line{position:absolute;left:0;right:0;height:4px;background:var(--orange);opacity:0.6;animation:scan 1.9s ease-in-out infinite;}
+@keyframes scan{0%{top:0;opacity:0;}12%{opacity:1;}88%{opacity:1;}100%{top:100%;opacity:0;}}
+.analyzing-text{margin-top:34px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:16px;font-weight:600;color:var(--ink2);letter-spacing:.03em;}
+.dot-pulse{width:10px;height:10px;border-radius:50%;background:var(--orange);animation:dotPulse 1.2s ease-in-out infinite;}
+@keyframes dotPulse{0%,100%{transform:scale(.6);opacity:.4;}50%{transform:scale(1.15);opacity:1;}}
+
+.result-head{padding:40px 0 16px;}
+.photo-card{ position:relative; border-radius:4px; overflow:hidden; border: 8px solid var(--white); box-shadow: 0 4px 15px rgba(0,0,0,0.15), 2px 2px 0 var(--line); aspect-ratio:1/1; background:var(--orangeL); transform: rotate(-1deg); }
+.photo-card img{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-stamp{position:absolute;right:10px;bottom:10px;background:var(--white);color:var(--orange);font-size:13px;font-weight:800;letter-spacing:.1em;padding:7px 14px;border-radius:99px;border: 1.5px solid var(--orange); transform: rotate(-5deg); box-shadow: 2px 2px 0 rgba(0,0,0,0.1);}
+
+.breed-card{margin-top:18px;background:var(--white);border: 2px solid var(--ink);border-radius:15px 25px 20px 30px / 30px 20px 25px 15px;padding:22px;box-shadow: 3px 3px 0 var(--line);}
+.breed-label{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--ink2);opacity:.65;}
+
+.section-title{margin:30px 0 4px;font-size:16px;font-weight:800;letter-spacing:.05em;color:var(--ink);display:flex;align-items:center;gap:7px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+
+.chip{ padding:8px 15px;border-radius:15px 5px 15px 5px / 5px 15px 5px 15px; font-size:14px;font-weight:600;background:var(--white);border:1.5px solid var(--line);color:var(--ink); cursor:pointer;font-family:inherit;transition:.15s;box-shadow: 1.5px 1.5px 0 var(--line); }
+.chip.on{background:var(--orange);border-color:var(--ink);color:var(--white);box-shadow: 2px 2px 0 var(--ink);transform:translate(-1px, -1px);}
+.chip:active{transform:translate(1px, 1px);box-shadow: 0 0 0 var(--line);}
+
+.text-input{ width:100%;margin-top:12px;padding:14px 17px;border-radius:10px 15px 10px 15px / 15px 10px 15px 10px; border:1.5px solid var(--ink);background:var(--white); font-size:15px;font-family:inherit;color:var(--ink);outline:none;transition:border-color .2s;box-shadow: inset 1px 1px 3px rgba(0,0,0,0.05); }
+.text-input::placeholder{color:#9DAE8B;font-style:italic;}
+.text-input:focus{border-color:var(--orange);}
+
+.notes-history-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.note-history-item { background: var(--white); padding: 10px 14px; border-radius: 8px; font-size: 14px; border: 1px dashed var(--line); color: var(--ink); position: relative; box-shadow: 2px 2px 0 rgba(0,0,0,0.02); line-height: 1.5; }
+.note-history-date { display: block; font-size: 11px; color: var(--ink2); margin-top: 4px; font-style: italic; }
+
+#history-panel ul li { margin-bottom: 4px; }
+.gal-notes { font-size: 12px; color: var(--orange); margin-top: 4px; font-style: italic; background: rgba(70, 91, 54, 0.1); padding: 4px 8px; border-radius: 6px; }
+.badge-days { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 6px; margin-left: 6px; font-weight: bold; vertical-align: middle; transition: all 0.3s; }
+
+.back-btn{background:none;border:none;font-family:inherit;font-size:15px;font-weight:600;color:var(--ink2);cursor:pointer;padding:40px 0 0;transition:.2s;}
+.back-btn:hover{color:var(--orange);}
+.gallery-title{margin-top:22px;font-size:30px;font-weight:800;color:var(--ink);}
+.gallery-sub{margin-top:7px;font-size:14px;color:var(--ink2);}
+
+.corkboard-wrap{ margin-top: 16px; height: 90px; background-color: #C3D0B0; background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 4px); border: 2px solid var(--ink); border-radius: 8px; box-shadow: 4px 4px 0 var(--ink); overflow: hidden; position: relative; display: flex; align-items: center; }
+.corkboard-track{display: flex; white-space: nowrap; animation: marquee 25s linear infinite; padding-left: 20px;}
+.corkboard-track:hover { animation-play-state: paused; }
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+.voice-note { display: inline-flex; align-items: center; justify-content: center; background: var(--white); margin-right: 25px; padding: 8px 16px; color: var(--ink); font-weight: 700; transform-origin: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.15); position: relative; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
+
+.gallery-list{margin-top:22px;display:flex;flex-direction:column;gap:16px;}
+.gal-item{position:relative; display:flex; gap:14px; background:var(--white); border:2px solid var(--ink); border-radius:15px 20px 15px 20px / 20px 15px 20px 15px; padding:14px; padding-right: 40px; box-shadow: 3px 3px 0 var(--line); animation:viewIn .5s cubic-bezier(.2,.8,.3,1) backwards; transition: border-color 0.5s ease, box-shadow 0.5s ease;}
+.gal-item img{width:84px;height:84px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--orangeL);border: 1px solid var(--line);}
+.gal-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;}
+.gal-name{font-size:17px;font-weight:800;color:var(--ink);}
+.gal-meta{font-size:13px;color:var(--ink2);display:flex;flex-wrap:wrap;gap:6px;}
+.gal-meta span{background:var(--paper);padding:3px 9px;border-radius:6px;font-weight:600;border:1px solid var(--line);}
+.gal-date{font-size:12px;color:#7A8A69;font-weight:600;letter-spacing:.03em;}
+
+.del-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: var(--paper); border: 1.5px solid var(--line); color: var(--ink2); font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 1px 1px 0 var(--line); }
+.del-btn:hover { background: #FFE5E5; color: var(--orange); border-color: var(--orange); }
+
+.empty{text-align:center;padding:70px 20px;color:var(--ink2);}
+.empty-emoji{font-size:50px;opacity:.8;display:block;margin-bottom:14px;filter: sepia(50%);}
+.empty p{font-size:15px;line-height:1.7;}
+
+.input-with-btn { position: relative; width: 100%; margin-top: 12px; }
+.input-with-btn .text-input { margin-top: 0; padding-right: 70px; }
+.add-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: var(--orangeL); color: var(--orange); border: 1.5px solid var(--orange); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.2s ease; opacity: 0; pointer-events: none; }
+.input-with-btn.has-value .add-btn { opacity: 1; pointer-events: auto; }
+.add-btn:active { transform: translateY(-50%) scale(0.92); background: var(--orange); color: var(--white); }
+
+.toast{position:fixed;left:50%;bottom:44px;transform:translate(-50%,20px);background:var(--ink);color:var(--paper);font-size:15px;font-weight:600;padding:12px 24px;border-radius:8px;z-index:99;opacity:0;pointer-events:none;transition:.32s cubic-bezier(.2,.8,.3,1);box-shadow: 2px 2px 0 rgba(0,0,0,0.2);white-space:nowrap;}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+
+/* =========================================
+   🌟 悬浮按钮（极严苛防阻挡+强制悬浮）
+   ========================================= */
+.floating-save {
+  position: fixed !important;
+  display: none !important; /* 默认隐藏 */
+  right: 20px !important;
+  /* 适配所有手机底部小白条和刘海 */
+  bottom: calc(30px + env(safe-area-inset-bottom, 0px)) !important; 
+  width: auto !important;
+  min-width: 140px !important;
+  padding: 12px 24px !important;
+  border-radius: 999px !important;
+  font-size: 16px !important;
+  z-index: 999999 !important; /* 极高层级防遮挡 */
+  border: 2px solid var(--ink) !important;
+  box-shadow: 4px 4px 0 var(--ink) !important;
+  transition: transform 0.1s, box-shadow 0.1s !important;
+  background: var(--orange) !important;
+  color: var(--white) !important;
+  font-weight: bold !important;
+  transform: translateZ(0) !important; /* 强制启用硬件加速，防手机渲染丢失 */
+}
+
+.floating-save:active {
+  transform: translate(4px, 4px) translateZ(0) !important;
+  box-shadow: 0 0 0 var(--ink) !important;
+}
+
+/* 结果页底部留白 */
+#view-result { padding-bottom: 150px; }
+
+/* 只有 body 带有 view-result 标签时，才显示悬浮按钮 */
+body.view-result .floating-save {
+  display: block !important;
+}
+
+/* 弹窗 */
+.custom-modal-overlay { position: fixed; inset: 0; background: rgba(42, 37, 32, 0.4); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease; pointer-events: none; }
+.custom-modal-overlay.show { opacity: 1; pointer-events: auto; }
+.custom-modal-box { background: var(--white); border: 2.5px solid var(--ink); border-radius: 15px 25px 20px 30px / 30px 20px 25px 15px; padding: 24px 20px; width: 85%; max-width: 340px; box-shadow: 6px 6px 0 var(--ink); transform: translateY(20px) scale(0.95); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.custom-modal-overlay.show .custom-modal-box { transform: translateY(0) scale(1); }
+.custom-modal-text { font-size: 16px; font-weight: 700; color: var(--ink); text-align: center; line-height: 1.6; margin-bottom: 24px; }
+.custom-modal-actions { display: flex; flex-direction: column; gap: 12px; }
+.btn-modal-confirm { background: var(--ink); color: var(--white); border: 2px solid var(--ink); border-radius: 12px; padding: 12px; font-size: 15px; font-weight: bold; font-family: inherit; cursor: pointer; box-shadow: 3px 3px 0 var(--line); transition: all 0.1s; }
+.btn-modal-confirm:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--line); }
+.btn-modal-cancel { background: var(--orangeL); color: var(--orange); border: 2px solid var(--orange); border-radius: 12px; padding: 12px; font-size: 15px; font-weight: bold; font-family: inherit; cursor: pointer; box-shadow: 3px 3px 0 var(--line); transition: all 0.1s; }
+.btn-modal-cancel:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--line); }
+
+/* 手绘感互动复选框 */
+.hand-checkbox { display: flex; align-items: center; user-select: none; position: relative; }
+.hand-checkbox .box { display: inline-flex; justify-content: center; align-items: center; width: 22px; height: 22px; border: 2.5px solid var(--ink); border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; background: var(--white); margin-right: 10px; position: relative; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.hand-checkbox .box svg { width: 24px; height: 24px; stroke: var(--orange); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; fill: none; position: absolute; top: -3px; left: -3px; }
+.hand-checkbox .box svg path { stroke-dasharray: 30; stroke-dashoffset: 30; transition: stroke-dashoffset 0.4s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.hand-checkbox .box.active { background: var(--orangeL); transform: rotate(-4deg) scale(1.05); }
+.hand-checkbox .box.active svg path { stroke-dashoffset: 0; }
+.hand-checkbox .text { font-size: 16px; font-weight: 800; letter-spacing: .05em; color: var(--ink); transition: color 0.2s; }
+.loc-icon { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: -2px; margin-right: 3px; }
+
+/* 底部装饰图 */
+.deco-bottom { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); width: 120px; height: 120px; z-index: 0; pointer-events: none; opacity: 0.9; object-fit: contain; }
+.deco-left { left: -15px; }
+.deco-right { right: -15px; }
+</style>
 </head>
 <body>
 
@@ -19,7 +216,8 @@
     <div class="paw-stage">
       <div class="paw-ring-outer"></div>
       <div class="paw-ring-inner">
-        <svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- 固定宽高防炸裂 -->
+        <svg width="190" height="190" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
           <path d="M 50 10 A 10 10 0 0 1 70 15.3 A 10 10 0 0 1 84.6 30 A 10 10 0 0 1 90 50 A 10 10 0 0 1 84.6 70 A 10 10 0 0 1 70 84.6 A 10 10 0 0 1 50 90 A 10 10 0 0 1 30 84.6 A 10 10 0 0 1 15.4 70 A 10 10 0 0 1 10 50 A 10 10 0 0 1 15.4 30 A 10 10 0 0 1 30 15.3 A 10 10 0 0 1 50 10 Z" fill="#CDD3B4" stroke="#3A4A2C" stroke-width="2.5" stroke-linejoin="round"/>
         </svg>
       </div>
@@ -155,8 +353,7 @@
       <ul id="history-list" style="padding-left: 16px; font-size: 12px; color: var(--ink2); line-height: 1.8;"></ul>
     </div>
 
-    <!-- 留出空间给悬浮按钮 -->
-    <div style="margin-top: 50px; margin-bottom: 120px; text-align: center;">
+    <div style="margin-top: 50px; margin-bottom: 100px; text-align: center;">
       <button id="btn-again" style="background: none; border: none; color: var(--ink2); font-size: 14px; font-family: inherit; cursor: pointer; text-decoration: underline; opacity: 0.7;">放弃当前内容并开启新图鉴</button>
     </div>
   </section>
@@ -174,10 +371,10 @@
   </section>
 </div>
 
-<!-- 🌟 悬浮按钮放在这里，脱离动画容器，保证绝对悬浮 -->
+<!-- 悬浮按钮放在 body 直属下，保证绝对 fixed -->
 <button class="btn-main floating-save" id="btn-save">收进图鉴</button>
 
-<!-- 🌟 底部装饰图（带 onerror 隐藏，无图时不显示文字） -->
+<!-- 底部装饰图带隐藏保护 -->
 <img src="plant.png" class="deco-bottom deco-left" alt="" onerror="this.style.display='none'">
 <img src="cat.png" class="deco-bottom deco-right" alt="" onerror="this.style.display='none'">
 
