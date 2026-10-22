@@ -1,4 +1,26 @@
-﻿const state = {
+﻿// 🌟 随机提示词库（优先猫狗）
+const PLACEHOLDER_POOL = [
+  "比如：三花猫、小黑狗、大熊猫…",
+  "比如：大橘猫、哈士奇、小鹦鹉…",
+  "比如：奶牛猫、金毛、小兔子…",
+  "比如：狸花猫、柯基、小仓鼠…",
+  "比如：流浪猫、修勾、小松鼠…",
+  "比如：白手套猫、边牧、小刺猬…",
+  "比如：异瞳白猫、柴犬、水豚…",
+  "比如：黑猫警长、萨摩耶、小乌龟…",
+  "比如：小奶猫、泰迪、小蜥蜴…",
+  "比如：胖橘、拉布拉多、小蛇…"
+];
+
+// 🌟 手账风过渡文案
+const MSGS = [
+  "正在冲洗你的拍立得... 📸",
+  "准备复古手账画板... ✂️",
+  "匹配专属贴纸词库... 🐾",
+  "手账已准备好啦！🎉"
+];
+
+const state = {
   dataURL: null,
   currentType: 'default',
   editingId: null, 
@@ -49,6 +71,33 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+// ==========================================
+// 🌟 核心新增：自动更新复选框打钩状态（纯 CSS 类名控制）
+// ==========================================
+function updateCheckboxes() {
+  const setCheckState = (id, isChecked) => {
+    const el = $(id);
+    if (el) {
+      const box = el.querySelector('.box');
+      if (box) {
+        box.classList.toggle('active', isChecked);
+      }
+    }
+  };
+
+  // 1. 地点
+  setCheckState('check-location', $('location-input').value.trim() !== '');
+  
+  // 2. 性格/声音/饭量/印象
+    // 2. 性格/声音/饭量
+  setCheckState('check-personality', state.personality.size > 0 || $('personality-input').value.trim() !== '');
+  setCheckState('check-voice', state.voice.size > 0 || $('voice-input').value.trim() !== '');
+  setCheckState('check-appetite', state.appetite.size > 0 || $('appetite-input').value.trim() !== '');
+  // 3. 留言
+  const hasHistoryNotes = $('notes-history').children.length > 0;
+  setCheckState('check-notes', $('notes-input').value.trim() !== '' || hasHistoryNotes);
+}
+
 function compress(img, maxW = 520, quality = 0.72) {
   const scale = Math.min(1, maxW / img.width);
   const c = document.createElement('canvas');
@@ -87,6 +136,7 @@ function renderLocationChips() {
         $('location-input').value = text;
       }
       updateTagsFromContext(); 
+      updateCheckboxes(); 
     });
     container.appendChild(b);
   });
@@ -101,6 +151,7 @@ function renderLocationChips() {
       }
     });
     updateTagsFromContext();
+    updateCheckboxes(); 
   };
 }
 
@@ -157,6 +208,7 @@ function renderRandomChips(containerId, poolType, count = 12) {
         selectedSet.add(text);
       }
       b.classList.toggle('on');
+      updateCheckboxes(); 
     });
     container.appendChild(b);
   });
@@ -171,6 +223,7 @@ function handleCustomInput(type, inputId, containerId, count) {
     toast('最多选 6 个哦');
     input.value = '';
     input.parentElement.classList.remove('has-value');
+    updateCheckboxes();
     return;
   }
   
@@ -187,6 +240,7 @@ function handleCustomInput(type, inputId, containerId, count) {
   renderRandomChips(containerId, type, count);
   input.value = '';
   input.parentElement.classList.remove('has-value');
+  updateCheckboxes(); 
 }
 
 function analyzeContext() {
@@ -259,7 +313,6 @@ function editRecord(id) {
   $('result-img').src = record.photo;
   $('animal-name').value = record.breed;
   $('location-input').value = record.location || '';
-  $('notes-input').value = record.notes || '';
   renderLocationChips(); 
   
   state.personality = new Set(record.personality || []);
@@ -274,6 +327,21 @@ function editRecord(id) {
   renderRandomChips('appetite-chips', 'appetite', 8);
   renderRandomChips('vibe-chips', 'vibe', 8);
 
+  const notesHistory = $('notes-history');
+  notesHistory.innerHTML = '';
+  if (record.notes && record.notes.length > 0) {
+    notesHistory.style.display = 'flex';
+    [...record.notes].reverse().forEach(n => {
+      const div = document.createElement('div');
+      div.className = 'note-history-item';
+      div.innerHTML = `${escapeHTML(n.text)}<span class="note-history-date">${n.date}</span>`;
+      notesHistory.appendChild(div);
+    });
+  } else {
+    notesHistory.style.display = 'none';
+  }
+  $('notes-input').value = ''; 
+
   const historyPanel = $('history-panel');
   const historyList = $('history-list');
   if (record.history && record.history.length > 0) {
@@ -287,6 +355,7 @@ function editRecord(id) {
   $('btn-save').innerHTML = '💾 保存修改';
   state.saved = false;
 
+  updateCheckboxes(); 
   view('result');
 }
 
@@ -295,7 +364,6 @@ $('btn-start').addEventListener('click', () => {
   $('file-input').click();
 });
 
-// ========== 防误触核心逻辑（自定义萌系弹窗） ==========
 $('btn-again').addEventListener('click', () => {
   const hasContent = $('animal-name').value.trim() !== '' || 
                      state.personality.size > 0 || 
@@ -311,7 +379,6 @@ $('btn-again').addEventListener('click', () => {
   }
 });
 
-// 动态生成弹窗
 function showCustomModal() {
   const overlay = document.createElement('div');
   overlay.className = 'custom-modal-overlay';
@@ -370,6 +437,7 @@ $('animal-name').addEventListener('input', updateTagsFromContext);
     } else {
       wrapper.classList.remove('has-value');
     }
+    updateCheckboxes(); 
   });
 
   input.addEventListener('keydown', (e) => {
@@ -383,6 +451,8 @@ $('animal-name').addEventListener('input', updateTagsFromContext);
     handleCustomInput(type, type + '-input', type + '-chips', count);
   });
 });
+
+$('notes-input').addEventListener('input', updateCheckboxes);
 
 $('btn-refresh-personality').addEventListener('click', () => renderRandomChips('personality-chips', 'personality', 12));
 $('btn-refresh-voice').addEventListener('click', () => renderRandomChips('voice-chips', 'voice', 12));
@@ -426,9 +496,18 @@ $('file-input').addEventListener('change', async e => {
 
   state.dataURL = newDataURL;
   $('scan-img').src = state.dataURL;
+  
+  let msgIdx = 0;
+  $('analyzing-msg').textContent = MSGS[0];
+  const msgTimer = setInterval(() => {
+    msgIdx = (msgIdx + 1) % MSGS.length;
+    $('analyzing-msg').textContent = MSGS[msgIdx];
+  }, 400);
+
   view('analyzing');
 
   setTimeout(() => {
+    clearInterval(msgTimer);
     state.personality = new Set();
     state.voice = new Set();
     state.appetite = new Set();
@@ -440,12 +519,15 @@ $('file-input').addEventListener('change', async e => {
     $('result-status-chip').textContent = '✓ 记录完成';
     $('btn-save').innerHTML = '💾 收进图鉴';
     $('history-panel').style.display = 'none';
+    $('notes-history').style.display = 'none';
+    $('notes-history').innerHTML = '';
 
     $('result-img').src = state.dataURL;
     $('animal-name').value = '';
     $('location-input').value = '';
     $('notes-input').value = '';
     
+    $('animal-name').placeholder = PLACEHOLDER_POOL[Math.floor(Math.random() * PLACEHOLDER_POOL.length)];
     renderLocationChips();
     
     renderRandomChips('personality-chips', 'personality', 12);
@@ -459,8 +541,9 @@ $('file-input').addEventListener('change', async e => {
       input.parentElement.classList.remove('has-value');
     });
 
+    updateCheckboxes(); 
     view('result');
-  }, 1000);
+  }, 1200);
 });
 
 $('btn-save').addEventListener('click', () => {
@@ -482,11 +565,13 @@ $('btn-save').addEventListener('click', () => {
 
   const animalName = $('animal-name').value.trim() || '神秘动物伙伴';
   const location = $('location-input').value.trim() || '未记录地点';
-  const notes = $('notes-input').value.trim();
+  
+  const newNoteText = $('notes-input').value.trim();
+  const todayStr = new Date().toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+  const nowTimeStr = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  const noteDate = `${todayStr} ${nowTimeStr}`;
 
   const records = getRecords();
-  const todayStr = new Date().toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
-
   const isEditing = state.editingId && records.findIndex(r => r.id === state.editingId) !== -1;
 
   if (isEditing) {
@@ -503,10 +588,18 @@ $('btn-save').addEventListener('click', () => {
       records[index].history = records[index].history.slice(0, 10);
     }
 
+    let currentNotes = records[index].notes;
+    if (!Array.isArray(currentNotes)) {
+      currentNotes = currentNotes ? [{ text: currentNotes, date: '之前' }] : [];
+    }
+    if (newNoteText) {
+      currentNotes.push({ text: newNoteText, date: noteDate });
+    }
+
     records[index].breed = animalName;
     records[index].location = location;
     records[index].photo = state.dataURL;
-    records[index].notes = notes; 
+    records[index].notes = currentNotes;
     records[index].lastSeen = new Date().toISOString(); 
     records[index].personality = [...state.personality];
     records[index].voice = [...state.voice];
@@ -523,7 +616,7 @@ $('btn-save').addEventListener('click', () => {
       photo: state.dataURL,
       breed: animalName,
       location: location,
-      notes: notes,
+      notes: newNoteText ? [{ text: newNoteText, date: noteDate }] : [],
       history: [],
       personality: [...state.personality],
       voice: [...state.voice],
@@ -643,6 +736,13 @@ function renderGallery() {
 
     const extra = [...(r.personality || []), ...(r.voice || []), ...(r.appetite || []), ...(r.vibe || [])];
     
+    let latestNote = '';
+    if (Array.isArray(r.notes) && r.notes.length > 0) {
+      latestNote = r.notes[r.notes.length - 1].text;
+    } else if (typeof r.notes === 'string' && r.notes) {
+      latestNote = r.notes;
+    }
+
     let days = 0;
     const startDate = r.createdAt || r.lastSeen; 
     if (startDate) {
@@ -672,8 +772,14 @@ function renderGallery() {
         <div class="gal-meta">
           ${extra.slice(0, 5).map(t => `<span>${escapeHTML(t)}</span>`).join('')}
         </div>
-        <div class="gal-date">📍 ${escapeHTML(r.location || '未知地点')} · ${r.date} 遇见</div>
-        ${r.notes ? `<div class="gal-notes">📝 ${escapeHTML(r.notes)}</div>` : ''}
+        <div class="gal-date">
+          <svg class="loc-icon" viewBox="0 0 24 24">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          ${escapeHTML(r.location || '未知地点')} · ${r.date} 记录相遇
+        </div>
+        ${latestNote ? `<div class="gal-notes">💌 ${escapeHTML(latestNote)}</div>` : ''}
       </div>
       <button class="del-btn" data-id="${r.id}" title="删除这条记录">✕</button>
     `;
