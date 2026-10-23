@@ -8,31 +8,24 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐾</text></svg>">
 
 <style>
-/* =========================================
-   🌟 所有 CSS 直接内联，杜绝手机加载失败
-   ========================================= */
+/* 🌟 所有 CSS 直接内联，杜绝手机加载失败 */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-
 :root{
   --paper: #DCE0C8; --ink: #2B3A21; --ink2: #5C6B52; --orange: #465B36; 
   --orangeL: #C8D1B0; --line: #A6B591; --white: #F5F6EE;        
 }
-
 html,body{height:100%;}
 body{
   font-family: "Kaiti SC", "STKaiti", "KaiTi", "楷体", "PingFang SC", "Microsoft YaHei", sans-serif;
   background-color: var(--paper); color: var(--ink); -webkit-font-smoothing:antialiased; 
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
 }
-
-/* 限制滚动在 app 内部，不影响悬浮 */
 .app{
   position:relative; z-index:1; max-width:520px; margin:0 auto; padding:0 20px 48px; min-height:100%;
   background: rgba(253, 247, 238, 0.4);
   box-shadow: -2px 0 10px rgba(0,0,0,0.05), 2px 0 10px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.05);
   overflow-x: hidden; 
 }
-
 .view{display:none;}
 .view.active{display:block; animation: simpleFade 0.3s ease-out;}
 @keyframes simpleFade { from { opacity: 0; } to { opacity: 1; } }
@@ -77,20 +70,43 @@ body{
 @keyframes dotPulse{0%,100%{transform:scale(.6);opacity:.4;}50%{transform:scale(1.15);opacity:1;}}
 
 .result-head{padding:40px 0 16px;}
-.photo-card{ position:relative; border-radius:4px; overflow:hidden; border: 8px solid var(--white); box-shadow: 0 4px 15px rgba(0,0,0,0.15), 2px 2px 0 var(--line); aspect-ratio:1/1; background:var(--orangeL); transform: rotate(-1deg); }
-.photo-card img{width:100%;height:100%;object-fit:cover;display:block;}
+
+/* 核心改动：多图横向滑动相册 */
+.photo-gallery-scroll {
+  width: 100%; overflow-x: auto; scroll-snap-type: x mandatory;
+  padding-bottom: 10px; -webkit-overflow-scrolling: touch;
+}
+.photo-gallery-scroll::-webkit-scrollbar { display: none; }
+.photo-gallery-track { display: flex; gap: 15px; padding: 0 5px; }
+.photo-gallery-track .photo-card {
+  min-width: 85%; /* 露出下一张的一小部分提示可以滑动 */
+  flex-shrink: 0; scroll-snap-align: center;
+  position:relative; border-radius:4px; overflow:hidden; border: 8px solid var(--white); 
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15), 2px 2px 0 var(--line); aspect-ratio:1/1; background:var(--orangeL);
+  transform: rotate(-1deg);
+}
+.photo-gallery-track .photo-card img{width:100%;height:100%;object-fit:cover;display:block;}
 .photo-stamp{position:absolute;right:10px;bottom:10px;background:var(--white);color:var(--orange);font-size:13px;font-weight:800;letter-spacing:.1em;padding:7px 14px;border-radius:99px;border: 1.5px solid var(--orange); transform: rotate(-5deg); box-shadow: 2px 2px 0 rgba(0,0,0,0.1);}
+.del-photo-btn {
+  position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9);
+  border: 1.5px solid var(--orange); color: var(--orange); width: 28px; height: 28px;
+  border-radius: 50%; font-weight: bold; display: flex; align-items: center; justify-content: center;
+  z-index: 10; cursor: pointer; box-shadow: 2px 2px 0 rgba(0,0,0,0.1); font-size: 14px;
+}
+.add-photo-card {
+  min-width: 85%; border: 2px dashed var(--line); border-radius: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--white); color: var(--ink2); cursor: pointer; aspect-ratio: 1/1;
+  flex-shrink: 0; scroll-snap-align: center; box-shadow: 2px 2px 0 var(--line);
+}
 
 .breed-card{margin-top:18px;background:var(--white);border: 2px solid var(--ink);border-radius:15px 25px 20px 30px / 30px 20px 25px 15px;padding:22px;box-shadow: 3px 3px 0 var(--line);}
 .breed-label{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--ink2);opacity:.65;}
-
 .section-title{margin:30px 0 4px;font-size:16px;font-weight:800;letter-spacing:.05em;color:var(--ink);display:flex;align-items:center;gap:7px;}
 .chip-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
-
 .chip{ padding:8px 15px;border-radius:15px 5px 15px 5px / 5px 15px 5px 15px; font-size:14px;font-weight:600;background:var(--white);border:1.5px solid var(--line);color:var(--ink); cursor:pointer;font-family:inherit;transition:.15s;box-shadow: 1.5px 1.5px 0 var(--line); }
 .chip.on{background:var(--orange);border-color:var(--ink);color:var(--white);box-shadow: 2px 2px 0 var(--ink);transform:translate(-1px, -1px);}
 .chip:active{transform:translate(1px, 1px);box-shadow: 0 0 0 var(--line);}
-
 .text-input{ width:100%;margin-top:12px;padding:14px 17px;border-radius:10px 15px 10px 15px / 15px 10px 15px 10px; border:1.5px solid var(--ink);background:var(--white); font-size:15px;font-family:inherit;color:var(--ink);outline:none;transition:border-color .2s;box-shadow: inset 1px 1px 3px rgba(0,0,0,0.05); }
 .text-input::placeholder{color:#9DAE8B;font-style:italic;}
 .text-input:focus{border-color:var(--orange);}
@@ -99,25 +115,18 @@ body{
 .note-history-item { background: var(--white); padding: 10px 14px; border-radius: 8px; font-size: 14px; border: 1px dashed var(--line); color: var(--ink); position: relative; box-shadow: 2px 2px 0 rgba(0,0,0,0.02); line-height: 1.5; }
 .note-history-date { display: block; font-size: 11px; color: var(--ink2); margin-top: 4px; font-style: italic; }
 
-#history-panel ul li { margin-bottom: 4px; }
-.gal-notes { font-size: 12px; color: var(--orange); margin-top: 4px; font-style: italic; background: rgba(70, 91, 54, 0.1); padding: 4px 8px; border-radius: 6px; }
-.badge-days { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 6px; margin-left: 6px; font-weight: bold; vertical-align: middle; transition: all 0.3s; }
-
 .back-btn{background:none;border:none;font-family:inherit;font-size:15px;font-weight:600;color:var(--ink2);cursor:pointer;padding:40px 0 0;transition:.2s;}
 .back-btn:hover{color:var(--orange);}
 .gallery-title{margin-top:22px;font-size:30px;font-weight:800;color:var(--ink);}
 .gallery-sub{margin-top:7px;font-size:14px;color:var(--ink2);}
-
 .corkboard-wrap{ margin-top: 16px; height: 90px; background-color: #C3D0B0; background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 4px); border: 2px solid var(--ink); border-radius: 8px; box-shadow: 4px 4px 0 var(--ink); overflow: hidden; position: relative; display: flex; align-items: center; }
 .corkboard-track{display: flex; white-space: nowrap; animation: marquee 25s linear infinite; padding-left: 20px;}
 .corkboard-track:hover { animation-play-state: paused; }
 @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-
 .voice-note { display: inline-flex; align-items: center; justify-content: center; background: var(--white); margin-right: 25px; padding: 8px 16px; color: var(--ink); font-weight: 700; transform-origin: center; box-shadow: 2px 2px 0 rgba(0,0,0,0.15); position: relative; border-radius: 4px; border: 1px solid rgba(0,0,0,0.1); }
 
 .gallery-list{margin-top:22px;display:flex;flex-direction:column;gap:16px;}
 .gal-item{position:relative; display:flex; gap:14px; background:var(--white); border:2px solid var(--ink); border-radius:15px 20px 15px 20px / 20px 15px 20px 15px; padding:14px; padding-right: 40px; box-shadow: 3px 3px 0 var(--line); animation:viewIn .5s cubic-bezier(.2,.8,.3,1) backwards; transition: border-color 0.5s ease, box-shadow 0.5s ease;}
-.gal-item img{width:84px;height:84px;border-radius:10px;object-fit:cover;flex-shrink:0;background:var(--orangeL);border: 1px solid var(--line);}
 .gal-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:6px;}
 .gal-name{font-size:17px;font-weight:800;color:var(--ink);}
 .gal-meta{font-size:13px;color:var(--ink2);display:flex;flex-wrap:wrap;gap:6px;}
@@ -140,44 +149,19 @@ body{
 .toast{position:fixed;left:50%;bottom:44px;transform:translate(-50%,20px);background:var(--ink);color:var(--paper);font-size:15px;font-weight:600;padding:12px 24px;border-radius:8px;z-index:99;opacity:0;pointer-events:none;transition:.32s cubic-bezier(.2,.8,.3,1);box-shadow: 2px 2px 0 rgba(0,0,0,0.2);white-space:nowrap;}
 .toast.show{opacity:1;transform:translate(-50%,0);}
 
-/* =========================================
-   🌟 悬浮按钮（极严苛防阻挡+强制悬浮）
-   ========================================= */
 .floating-save {
-  position: fixed !important;
-  display: none !important; /* 默认隐藏 */
-  right: 20px !important;
-  /* 适配所有手机底部小白条和刘海 */
-  bottom: calc(30px + env(safe-area-inset-bottom, 0px)) !important; 
-  width: auto !important;
-  min-width: 140px !important;
-  padding: 12px 24px !important;
-  border-radius: 999px !important;
-  font-size: 16px !important;
-  z-index: 999999 !important; /* 极高层级防遮挡 */
-  border: 2px solid var(--ink) !important;
-  box-shadow: 4px 4px 0 var(--ink) !important;
-  transition: transform 0.1s, box-shadow 0.1s !important;
-  background: var(--orange) !important;
-  color: var(--white) !important;
-  font-weight: bold !important;
-  transform: translateZ(0) !important; /* 强制启用硬件加速，防手机渲染丢失 */
+  position: fixed !important; display: none !important; right: 20px !important;
+  bottom: calc(30px + env(safe-area-inset-bottom, 0px)) !important; width: auto !important;
+  min-width: 140px !important; padding: 12px 24px !important; border-radius: 999px !important;
+  font-size: 16px !important; z-index: 999999 !important; border: 2px solid var(--ink) !important;
+  box-shadow: 4px 4px 0 var(--ink) !important; transition: transform 0.1s, box-shadow 0.1s !important;
+  background: var(--orange) !important; color: var(--white) !important; font-weight: bold !important;
+  transform: translateZ(0) !important; 
 }
-
-.floating-save:active {
-  transform: translate(4px, 4px) translateZ(0) !important;
-  box-shadow: 0 0 0 var(--ink) !important;
-}
-
-/* 结果页底部留白 */
+.floating-save:active { transform: translate(4px, 4px) translateZ(0) !important; box-shadow: 0 0 0 var(--ink) !important; }
 #view-result { padding-bottom: 150px; }
+body.view-result .floating-save { display: block !important; }
 
-/* 只有 body 带有 view-result 标签时，才显示悬浮按钮 */
-body.view-result .floating-save {
-  display: block !important;
-}
-
-/* 弹窗 */
 .custom-modal-overlay { position: fixed; inset: 0; background: rgba(42, 37, 32, 0.4); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease; pointer-events: none; }
 .custom-modal-overlay.show { opacity: 1; pointer-events: auto; }
 .custom-modal-box { background: var(--white); border: 2.5px solid var(--ink); border-radius: 15px 25px 20px 30px / 30px 20px 25px 15px; padding: 24px 20px; width: 85%; max-width: 340px; box-shadow: 6px 6px 0 var(--ink); transform: translateY(20px) scale(0.95); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.3, 1); }
@@ -189,7 +173,6 @@ body.view-result .floating-save {
 .btn-modal-cancel { background: var(--orangeL); color: var(--orange); border: 2px solid var(--orange); border-radius: 12px; padding: 12px; font-size: 15px; font-weight: bold; font-family: inherit; cursor: pointer; box-shadow: 3px 3px 0 var(--line); transition: all 0.1s; }
 .btn-modal-cancel:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--line); }
 
-/* 手绘感互动复选框 */
 .hand-checkbox { display: flex; align-items: center; user-select: none; position: relative; }
 .hand-checkbox .box { display: inline-flex; justify-content: center; align-items: center; width: 22px; height: 22px; border: 2.5px solid var(--ink); border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; background: var(--white); margin-right: 10px; position: relative; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .hand-checkbox .box svg { width: 24px; height: 24px; stroke: var(--orange); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; fill: none; position: absolute; top: -3px; left: -3px; }
@@ -199,10 +182,26 @@ body.view-result .floating-save {
 .hand-checkbox .text { font-size: 16px; font-weight: 800; letter-spacing: .05em; color: var(--ink); transition: color 0.2s; }
 .loc-icon { width: 13px; height: 13px; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none; vertical-align: -2px; margin-right: 3px; }
 
-/* 底部装饰图 */
 .deco-bottom { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); width: 120px; height: 120px; z-index: 0; pointer-events: none; opacity: 0.9; object-fit: contain; }
 .deco-left { left: -15px; }
 .deco-right { right: -15px; }
+
+/* =========================================
+   🌟 分享海报弹窗样式
+   ========================================= */
+.share-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.share-overlay.show { opacity: 1; pointer-events: auto; }
+.share-tip { color: #fff; font-size: 16px; margin-bottom: 20px; font-weight: bold; letter-spacing: 1px; }
+.share-img-container { width: 85%; max-width: 400px; max-height: 70vh; overflow-y: auto; border-radius: 12px; background: #fff; padding: 10px; }
+.share-img-container img { width: 100%; display: block; border-radius: 8px; }
+.share-close-btn {
+  margin-top: 20px; background: none; border: 1.5px solid #fff; color: #fff;
+  padding: 8px 24px; border-radius: 99px; font-size: 15px; cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -216,7 +215,6 @@ body.view-result .floating-save {
     <div class="paw-stage">
       <div class="paw-ring-outer"></div>
       <div class="paw-ring-inner">
-        <!-- 固定宽高防炸裂 -->
         <svg width="190" height="190" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
           <path d="M 50 10 A 10 10 0 0 1 70 15.3 A 10 10 0 0 1 84.6 30 A 10 10 0 0 1 90 50 A 10 10 0 0 1 84.6 70 A 10 10 0 0 1 70 84.6 A 10 10 0 0 1 50 90 A 10 10 0 0 1 30 84.6 A 10 10 0 0 1 15.4 70 A 10 10 0 0 1 10 50 A 10 10 0 0 1 15.4 30 A 10 10 0 0 1 30 15.3 A 10 10 0 0 1 50 10 Z" fill="#CDD3B4" stroke="#3A4A2C" stroke-width="2.5" stroke-linejoin="round"/>
         </svg>
@@ -262,14 +260,13 @@ body.view-result .floating-save {
       <span class="task-chip done" id="result-status-chip">✓ 记录完成</span>
     </div>
     
-    <div class="photo-card">
-      <img id="result-img" alt="">
-      <div class="photo-stamp">已遇见</div>
-      <button id="btn-change-photo" style="position: absolute; left: 14px; bottom: 14px; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); color: var(--orange); font-size: 12.5px; font-weight: 800; letter-spacing: .05em; padding: 7px 14px; border-radius: 99px; border: 1.5px solid var(--orange); cursor: pointer; transition: all 0.2s;">更换照片</button>
+    <!-- 多图横向滑动相册 -->
+    <div class="photo-gallery-scroll">
+      <div class="photo-gallery-track" id="result-photos-container"></div>
     </div>
     
     <div style="text-align: right; margin-top: 8px;">
-      <button id="btn-download" style="background: none; border: none; color: var(--ink2); font-size: 13px; font-family: inherit; cursor: pointer; text-decoration: underline; border-bottom: 1px dashed var(--line);">保存这张照片</button>
+      <button id="btn-download" style="background: none; border: none; color: var(--ink2); font-size: 13px; font-family: inherit; cursor: pointer; text-decoration: underline; border-bottom: 1px dashed var(--line);">保存当前主图</button>
     </div>
 
     <div class="breed-card" style="padding: 20px; margin-top: 12px;">
@@ -360,7 +357,10 @@ body.view-result .floating-save {
 
   <section id="view-gallery" class="view">
     <button class="back-btn" id="btn-back">← 返回</button>
-    <h2 class="gallery-title">我的动物图鉴</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2 class="gallery-title" style="margin-top: 22px;">我的动物图鉴</h2>
+      <button id="btn-share-gallery" style="background: var(--white); border: 1.5px solid var(--ink); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: bold; box-shadow: 2px 2px 0 var(--line); cursor: pointer; color: var(--ink);">生成海报</button>
+    </div>
     <div class="gallery-sub" id="gallery-sub">还没有记录</div>
     
     <div class="corkboard-wrap" id="corkboard-wrap">
@@ -371,15 +371,24 @@ body.view-result .floating-save {
   </section>
 </div>
 
-<!-- 悬浮按钮放在 body 直属下，保证绝对 fixed -->
+<!-- 悬浮按钮 -->
 <button class="btn-main floating-save" id="btn-save">收进图鉴</button>
 
-<!-- 底部装饰图带隐藏保护 -->
+<!-- 底部装饰图 -->
 <img src="plant.png" class="deco-bottom deco-left" alt="" onerror="this.style.display='none'">
 <img src="cat.png" class="deco-bottom deco-right" alt="" onerror="this.style.display='none'">
 
 <input type="file" id="file-input" accept="image/*" hidden>
 <div class="toast" id="toast"></div>
+
+<!-- 分享弹窗 -->
+<div class="share-overlay" id="share-overlay">
+  <div class="share-tip">长按下方图片保存到手机相册 👇</div>
+  <div class="share-img-container">
+    <img id="share-image" src="" alt="分享海报">
+  </div>
+  <button class="share-close-btn" id="btn-close-share">关闭</button>
+</div>
 
 <script src="breeds.js"></script>
 <script src="app.js"></script>

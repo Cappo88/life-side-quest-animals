@@ -7,7 +7,9 @@ const PLACEHOLDER_POOL = [
 const MSGS = ["正在冲洗你的拍立得... 📸", "准备复古手账画板... ✂️", "匹配专属贴纸词库... 🐾", "手账已准备好啦！🎉"];
 
 const state = {
-  dataURL: null, currentType: 'default', editingId: null, 
+  dataURL: null, 
+  photos: [], // 🌟 新增：存储多张照片的数组
+  currentType: 'default', editingId: null, 
   personality: new Set(), voice: new Set(), appetite: new Set(), vibe: new Set(),
   saved: false, lastShown: { personality: [], voice: [], appetite: [], vibe: [] },
   currentFeatures: new Set(), customWords: {}
@@ -31,20 +33,14 @@ function initCustomWords() {
   } catch(e) {}
 }
 
-// 🌟 极简且兼容性最高的页面切换，同时控制悬浮按钮的显隐
 function view(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const target = $('view-' + name);
   if (target) target.classList.add('active');
-  
   window.scrollTo(0, 0); 
   
-  // 如果进入结果页，给 body 加上 view-result 类以显示悬浮按钮
-  if (name === 'result') {
-    document.body.classList.add('view-result');
-  } else {
-    document.body.classList.remove('view-result');
-  }
+  if (name === 'result') document.body.classList.add('view-result');
+  else document.body.classList.remove('view-result');
 }
 
 let toastTimer;
@@ -55,6 +51,42 @@ function toast(msg) {
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// 🌟 多图相册渲染逻辑
+function renderResultPhotos() {
+  const container = $('result-photos-container');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  // 渲染已有的照片
+  state.photos.forEach((photoSrc, index) => {
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    card.innerHTML = `
+      <img src="${photoSrc}" alt="">
+      <div class="photo-stamp">已遇见</div>
+      <button class="del-photo-btn" data-index="${index}" title="删除这张">✕</button>
+    `;
+    card.querySelector('.del-photo-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.photos.splice(index, 1);
+      renderResultPhotos();
+      state.saved = false;
+    });
+    container.appendChild(card);
+  });
+
+  // 添加更多照片的卡片
+  const addCard = document.createElement('div');
+  addCard.className = 'photo-card add-photo-card';
+  addCard.innerHTML = `
+    <div style="font-size: 32px; margin-bottom: 8px;">📷</div>
+    <div style="font-size: 15px; font-weight: bold; color: var(--orange);">添加照片</div>
+    <div style="font-size: 12px; margin-top: 5px; color: var(--ink2);">记录更多可爱瞬间</div>
+  `;
+  addCard.addEventListener('click', () => $('file-input').click());
+  container.appendChild(addCard);
 }
 
 function updateCheckboxes() {
@@ -86,15 +118,13 @@ function renderLocationChips() {
   const container = $('location-chips');
   if (!container) return;
   container.innerHTML = '';
-  
   LOCATION_POOL.forEach(text => {
     const b = document.createElement('button');
     b.className = 'chip'; b.textContent = text; b.type = 'button';
     if ($('location-input').value === text) b.classList.add('on');
     b.addEventListener('click', () => {
-      if (b.classList.contains('on')) {
-        b.classList.remove('on'); $('location-input').value = '';
-      } else {
+      if (b.classList.contains('on')) { b.classList.remove('on'); $('location-input').value = ''; } 
+      else {
         container.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
         b.classList.add('on'); $('location-input').value = text;
       }
@@ -102,7 +132,6 @@ function renderLocationChips() {
     });
     container.appendChild(b);
   });
-
   $('location-input').oninput = (e) => {
     const val = e.target.value.trim();
     container.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.textContent === val));
@@ -126,22 +155,17 @@ function renderRandomChips(containerId, poolType, count = 12) {
   let fullPool = DICT[state.currentType]?.[poolType] || DICT.default[poolType] || [];
   const customList = state.customWords[state.currentType]?.[poolType] || [];
   fullPool = [...new Set([...customList, ...fullPool])];
-
-  if (poolType === 'vibe' || poolType === 'personality') {
-    fullPool = [...new Set([...Array.from(state.currentFeatures), ...fullPool])];
-  }
+  if (poolType === 'vibe' || poolType === 'personality') fullPool = [...new Set([...Array.from(state.currentFeatures), ...fullPool])];
 
   const selectedSet = state[poolType];
   const mustInclude = Array.from(selectedSet);
   let remainingPool = fullPool.filter(item => !selectedSet.has(item));
   const lastList = state.lastShown[poolType] || [];
   let freshPool = remainingPool.filter(item => !lastList.includes(item));
-  
   if (freshPool.length < count - mustInclude.length) freshPool = remainingPool; 
 
   freshPool = shuffleArray(freshPool);
   const finalWords = mustInclude.concat(freshPool.slice(0, Math.max(0, count - mustInclude.length)));
-  
   state.lastShown[poolType] = finalWords;
   shuffleArray(finalWords);
 
@@ -165,10 +189,7 @@ function handleCustomInput(type, inputId, containerId, count) {
   const input = $(inputId);
   const val = input.value.trim();
   if (!val) return;
-  
-  if (state[type].size >= 6) {
-    toast('最多选 6 个哦'); input.value = ''; input.parentElement.classList.remove('has-value'); updateCheckboxes(); return;
-  }
+  if (state[type].size >= 6) { toast('最多选 6 个哦'); input.value = ''; input.parentElement.classList.remove('has-value'); updateCheckboxes(); return; }
   
   state[type].add(val);
   if (!state.customWords[state.currentType]) state.customWords[state.currentType] = {};
@@ -177,7 +198,6 @@ function handleCustomInput(type, inputId, containerId, count) {
     state.customWords[state.currentType][type].push(val);
     localStorage.setItem('cat_quest_custom_words', JSON.stringify(state.customWords));
   }
-  
   renderRandomChips(containerId, type, count);
   input.value = ''; input.parentElement.classList.remove('has-value'); updateCheckboxes(); 
 }
@@ -191,7 +211,6 @@ function analyzeContext() {
     const matchedItem = FLAT_KEYWORDS.find(item => name.includes(item.keyword));
     if (matchedItem) { newType = matchedItem.type; nameMatched = true; }
   }
-
   if (!nameMatched) {
     if (loc) {
       if (['小区', '公园', '路边', '公司', '学校', '家里', '咖啡店', '花鸟市场', '宠物店'].some(kw => loc.includes(kw))) newType = 'pet';
@@ -215,7 +234,6 @@ function analyzeContext() {
   if (JSON.stringify([...newFeatures]) !== JSON.stringify([...state.currentFeatures])) {
     state.currentFeatures = newFeatures; needRerender = true;
   }
-
   if (needRerender) {
     renderRandomChips('personality-chips', 'personality', 12);
     renderRandomChips('voice-chips', 'voice', 12);
@@ -229,9 +247,13 @@ function editRecord(id) {
   const record = records.find(r => r.id === id);
   if (!record) return;
 
-  state.editingId = id; state.dataURL = record.photo;
+  state.editingId = id; 
+  // 🌟 兼容处理：老数据没有 photos，只有 photo
+  state.photos = record.photos ? [...record.photos] : (record.photo ? [record.photo] : []);
+  state.dataURL = state.photos[0] || null;
   
-  if ($('result-img')) $('result-img').src = record.photo;
+  renderResultPhotos(); // 渲染多图相册
+
   if ($('animal-name')) $('animal-name').value = record.breed;
   if ($('location-input')) $('location-input').value = record.location || '';
   renderLocationChips(); 
@@ -277,7 +299,6 @@ function editRecord(id) {
   updateCheckboxes(); view('result');
 }
 
-// 事件绑定
 if ($('btn-start')) $('btn-start').addEventListener('click', () => { state.editingId = null; $('file-input').click(); });
 if ($('btn-again')) $('btn-again').addEventListener('click', () => {
   const hasContent = ($('animal-name') && $('animal-name').value.trim() !== '') || state.personality.size > 0 || state.voice.size > 0 || state.appetite.size > 0 || state.vibe.size > 0;
@@ -300,7 +321,6 @@ function showCustomModal() {
   });
 }
 
-if ($('btn-change-photo')) $('btn-change-photo').addEventListener('click', () => $('file-input').click());
 if ($('btn-back-result')) $('btn-back-result').addEventListener('click', () => {
   const wasEditing = state.editingId; state.editingId = null; 
   if (wasEditing) view('gallery'); else view('home'); 
@@ -324,18 +344,19 @@ if ($('animal-name')) $('animal-name').addEventListener('input', analyzeContext)
 });
 
 if ($('notes-input')) $('notes-input').addEventListener('input', updateCheckboxes);
-
 ['personality', 'voice', 'appetite', 'vibe'].forEach(type => {
   const btn = $('btn-refresh-' + type);
   if (btn) btn.addEventListener('click', () => renderRandomChips(type + '-chips', type, (type === 'appetite' || type === 'vibe') ? 8 : 12));
 });
 
 if ($('btn-download')) $('btn-download').addEventListener('click', () => {
-  if (!state.dataURL) { toast('暂无图片'); return; }
-  const a = document.createElement('a'); a.href = state.dataURL; a.download = `遇见动物_${Date.now()}.jpg`;
+  const cover = state.photos[0];
+  if (!cover) { toast('暂无图片'); return; }
+  const a = document.createElement('a'); a.href = cover; a.download = `遇见动物_${Date.now()}.jpg`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a); toast('✓ 照片已开始下载');
 });
 
+// 🌟 处理图片上传（区分新建和添加）
 if ($('file-input')) $('file-input').addEventListener('change', async e => {
   const file = e.target.files && e.target.files[0]; e.target.value = '';
   if (!file || !file.type.startsWith('image/')) { toast('请上传图片文件'); return; }
@@ -346,11 +367,19 @@ if ($('file-input')) $('file-input').addEventListener('change', async e => {
 
   const img = await loadImage(rawURL); const newDataURL = compress(img);
 
+  // 如果已经在结果页（说明是点击“添加照片”）
   if ($('view-result') && $('view-result').classList.contains('active')) {
-    state.dataURL = newDataURL; if ($('result-img')) $('result-img').src = newDataURL; state.saved = false; toast('✓ 照片已更换，记得保存哦'); return;
+    state.photos.push(newDataURL); // 添加到相册数组
+    renderResultPhotos(); // 重新渲染相册
+    state.saved = false; 
+    toast('✓ 照片已添加，记得保存哦');
+    return;
   }
 
-  state.dataURL = newDataURL; if ($('scan-img')) $('scan-img').src = state.dataURL;
+  // 如果是新建（从首页上传的）
+  state.photos = [newDataURL]; // 清空之前的数组，放入第一张
+  state.dataURL = newDataURL; 
+  if ($('scan-img')) $('scan-img').src = state.dataURL;
   
   let msgIdx = 0; if ($('analyzing-msg')) $('analyzing-msg').textContent = MSGS[0];
   const msgTimer = setInterval(() => {
@@ -369,7 +398,8 @@ if ($('file-input')) $('file-input').addEventListener('change', async e => {
     if ($('history-panel')) $('history-panel').style.display = 'none';
     if ($('notes-history')) { $('notes-history').style.display = 'none'; $('notes-history').innerHTML = ''; }
 
-    if ($('result-img')) $('result-img').src = state.dataURL;
+    renderResultPhotos(); // 🌟 渲染相册
+
     if ($('animal-name')) { $('animal-name').value = ''; $('animal-name').placeholder = PLACEHOLDER_POOL[Math.floor(Math.random() * PLACEHOLDER_POOL.length)]; }
     if ($('location-input')) $('location-input').value = '';
     if ($('notes-input')) $('notes-input').value = '';
@@ -388,8 +418,10 @@ if ($('file-input')) $('file-input').addEventListener('change', async e => {
   }, 1200);
 });
 
+// 🌟 保存逻辑（存入 photos 数组）
 if ($('btn-save')) $('btn-save').addEventListener('click', () => {
   if (state.saved) { toast('已经保存啦'); return; }
+  if (state.photos.length === 0) { toast('请至少添加一张照片哦'); return; }
   
   ['personality', 'voice', 'appetite', 'vibe'].forEach(type => {
     const input = $(type + '-input');
@@ -407,7 +439,6 @@ if ($('btn-save')) $('btn-save').addEventListener('click', () => {
 
   const animalName = ($('animal-name') && $('animal-name').value.trim()) || '神秘动物伙伴';
   const location = ($('location-input') && $('location-input').value.trim()) || '未记录地点';
-  
   const newNoteText = ($('notes-input') && $('notes-input').value.trim()) || '';
   const todayStr = new Date().toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
   const nowTimeStr = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
@@ -431,7 +462,9 @@ if ($('btn-save')) $('btn-save').addEventListener('click', () => {
     if (!Array.isArray(currentNotes)) currentNotes = currentNotes ? [{ text: currentNotes, date: '之前' }] : [];
     if (newNoteText) currentNotes.push({ text: newNoteText, date: noteDate });
 
-    records[index].breed = animalName; records[index].location = location; records[index].photo = state.dataURL;
+    records[index].breed = animalName; records[index].location = location; 
+    records[index].photos = [...state.photos]; // 🌟 保存多图
+    records[index].photo = state.photos[0]; // 兼容字段
     records[index].notes = currentNotes; records[index].lastSeen = new Date().toISOString(); 
     records[index].personality = [...state.personality]; records[index].voice = [...state.voice];
     records[index].appetite = [...state.appetite]; records[index].vibe = [...state.vibe];
@@ -439,7 +472,9 @@ if ($('btn-save')) $('btn-save').addEventListener('click', () => {
   } else {
     records.unshift({
       id: Date.now(), date: todayStr, createdAt: new Date().toISOString(), lastSeen: new Date().toISOString(), 
-      photo: state.dataURL, breed: animalName, location: location,
+      photos: [...state.photos], // 🌟 保存多图
+      photo: state.photos[0], // 兼容字段
+      breed: animalName, location: location,
       notes: newNoteText ? [{ text: newNoteText, date: noteDate }] : [],
       history: [], personality: [...state.personality], voice: [...state.voice], appetite: [...state.appetite], vibe: [...state.vibe]
     });
@@ -522,17 +557,33 @@ function renderGallery() {
       daysBadge = `<span class="badge-days" style="background:var(--paper); color:var(--ink2); border: 1px solid var(--line);">已收录 ${days} 天</span>`;
     }
 
+    // 🌟 获取封面和角标
+    let cover = (r.photos && r.photos.length > 0) ? r.photos[0] : r.photo;
+    let photoCount = (r.photos && r.photos.length > 1) ? r.photos.length : 0;
+    let multiBadge = photoCount ? `<div style="position:absolute; right:5px; top:5px; background:rgba(0,0,0,0.5); color:#fff; font-size:11px; padding:2px 6px; border-radius:10px; backdrop-filter:blur(2px; -webkit-backdrop-filter:blur(2px);">${photoCount}张</div>` : '';
+
     item.innerHTML = `
-      <img src="${r.photo}" alt="">
+      <div style="position:relative; width:84px; height:84px; flex-shrink:0;">
+        <img src="${cover || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjQzhEMUIwIi8+PC9zdmc+'}" style="width:100%; height:100%; border-radius:10px; object-fit:cover; border: 1px solid var(--line);" alt="">
+        ${multiBadge}
+      </div>
       <div class="gal-info">
         <div class="gal-name">${escapeHTML(r.breed)} ${daysBadge}</div>
         <div class="gal-meta">${extra.slice(0, 5).map(t => `<span>${escapeHTML(t)}</span>`).join('')}</div>
         <div class="gal-date"><svg class="loc-icon" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>${escapeHTML(r.location || '未知地点')} · ${r.date} 记录相遇</div>
         ${latestNote ? `<div class="gal-notes">💌 ${escapeHTML(latestNote)}</div>` : ''}
       </div>
-      <button class="del-btn" data-id="${r.id}" title="删除这条记录">✕</button>`;
+      <button class="del-btn" data-id="${r.id}" title="删除这条记录">✕</button>
+      <button class="share-single-btn" data-id="${r.id}" style="position: absolute; right: 12px; bottom: 12px; background: var(--orangeL); border: 1.5px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; color: var(--orange); cursor: pointer;">分享</button>
+    `;
 
     item.addEventListener('click', () => editRecord(r.id));
+    
+    item.querySelector('.share-single-btn').addEventListener('click', (e) => {
+      e.stopPropagation(); 
+      generateSingleCardImage(r);
+    });
+
     item.querySelector('.del-btn').addEventListener('click', (e) => {
       e.stopPropagation(); 
       if (confirm('确定要删除这只动物伙伴的记录吗？')) deleteRecord(r.id);
@@ -548,6 +599,198 @@ function deleteRecord(id) {
 }
 
 function escapeHTML(s) { return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
+
+
+// ==========================================
+// 🌟 分享功能核心逻辑 (Canvas 绘制)
+// ==========================================
+const shareOverlay = $('share-overlay');
+if ($('btn-close-share')) {
+  $('btn-close-share').addEventListener('click', () => {
+    shareOverlay.classList.remove('show');
+  });
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split('');
+  let line = '';
+  for(let n = 0; n < words.length; n++) {
+    const testLine = line + words[n];
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && n > 0) {
+      ctx.fillText(line, x, y);
+      line = words[n];
+      y += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, x, y);
+  return y;
+}
+
+function loadImageAsync(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+async function generateSingleCardImage(record) {
+  toast('正在生成分享图...');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 800, H = 1100; 
+  canvas.width = W; canvas.height = H;
+
+  ctx.fillStyle = '#DCE0C8'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(0,0,0,0.03)';
+  for(let i=0; i<2000; i++){ ctx.fillRect(Math.random()*W, Math.random()*H, 2, 2); }
+
+  const cardX = 60, cardY = 60, cardW = W - 120, cardH = H - 120;
+  ctx.save();
+  ctx.translate(W/2, H/2);
+  ctx.rotate(-1.5 * Math.PI / 180); 
+  ctx.translate(-W/2, -H/2);
+
+  ctx.fillStyle = '#F5F6EE'; 
+  ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 20; ctx.shadowOffsetX = 5; ctx.shadowOffsetY = 5;
+  ctx.fillRect(cardX, cardY, cardW, cardH);
+  ctx.shadowColor = 'transparent';
+
+  let cover = (record.photos && record.photos.length > 0) ? record.photos[0] : record.photo;
+  try {
+    const img = await loadImageAsync(cover);
+    const imgSize = cardW - 40;
+    const minSide = Math.min(img.width, img.height);
+    const sx = (img.width - minSide) / 2, sy = (img.height - minSide) / 2;
+    ctx.drawImage(img, sx, sy, minSide, minSide, cardX + 20, cardY + 20, imgSize, imgSize);
+  } catch (e) {
+    ctx.fillStyle = '#C8D1B0'; ctx.fillRect(cardX+20, cardY+20, cardW-40, cardW-40);
+  }
+
+  const textX = cardX + 40; let textY = cardY + cardW + 20;
+  
+  ctx.fillStyle = '#2B3A21'; ctx.font = 'bold 48px "Kaiti SC", "Microsoft YaHei", sans-serif';
+  ctx.fillText(record.breed, textX, textY);
+  
+  textY += 50;
+  const tags = [...(record.personality||[]), ...(record.voice||[]), ...(record.appetite||[]), ...(record.vibe||[])].slice(0, 4);
+  ctx.font = '24px "Kaiti SC", "Microsoft YaHei", sans-serif';
+  let tagX = textX;
+  tags.forEach(tag => {
+    const tagW = ctx.measureText(tag).width + 30;
+    ctx.fillStyle = '#C8D1B0'; roundRect(ctx, tagX, textY - 25, tagW, 40, 8); ctx.fill();
+    ctx.fillStyle = '#2B3A21'; ctx.fillText(tag, tagX + 15, textY);
+    tagX += tagW + 15; if(tagX > W - 200) { tagX = textX; textY += 55; }
+  });
+
+  textY += 60;
+  ctx.fillStyle = '#5C6B52'; ctx.font = '24px "Kaiti SC", "Microsoft YaHei", sans-serif';
+  ctx.fillText(`📍 ${record.location || '未知地点'} · ${record.date}`, textX, textY);
+
+  if (record.notes && record.notes.length > 0) {
+    textY += 50; ctx.fillStyle = '#465B36'; ctx.font = 'italic 26px "Kaiti SC", "Microsoft YaHei", sans-serif';
+    const lastNote = record.notes[record.notes.length - 1].text;
+    wrapText(ctx, `💌 ${lastNote}`, textX, textY, cardW - 80, 36);
+  }
+
+  ctx.fillStyle = '#465B36'; ctx.font = 'bold 28px "Kaiti SC", sans-serif';
+  ctx.fillText('今天遇见猫咪了吗 🐾', textX, cardY + cardH - 40);
+
+  ctx.restore();
+  showShareImage(canvas.toDataURL('image/jpeg', 0.9));
+}
+
+async function generateGalleryImage() {
+  const records = getRecords();
+  if (!records.length) { toast('还没有记录哦'); return; }
+  toast('正在生成长图，请稍候...');
+  
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 800;
+  const H = 200 + Math.min(records.length, 10) * 220 + 150; 
+  canvas.width = W; canvas.height = H;
+
+  ctx.fillStyle = '#DCE0C8'; ctx.fillRect(0, 0, W, H);
+  
+  ctx.fillStyle = '#2B3A21'; ctx.font = 'bold 50px "Kaiti SC", sans-serif';
+  ctx.fillText('我的动物图鉴', 60, 100);
+  ctx.font = '24px "Kaiti SC", sans-serif'; ctx.fillStyle = '#5C6B52';
+  ctx.fillText(`已收录 ${records.length} 只动物伙伴`, 60, 150);
+
+  const maxDraw = Math.min(records.length, 10); 
+  for (let i = 0; i < maxDraw; i++) {
+    const r = records[i];
+    const itemY = 190 + i * 220;
+    
+    ctx.fillStyle = '#F5F6EE'; 
+    ctx.shadowColor = 'rgba(0,0,0,0.08)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
+    roundRect(ctx, 60, itemY, W - 120, 190, 16); ctx.fill();
+    ctx.shadowColor = 'transparent';
+
+    let cover = (r.photos && r.photos.length > 0) ? r.photos[0] : r.photo;
+    try {
+      const img = await loadImageAsync(cover);
+      const minSide = Math.min(img.width, img.height);
+      const sx = (img.width - minSide) / 2, sy = (img.height - minSide) / 2;
+      ctx.save(); roundRect(ctx, 80, itemY + 20, 150, 150, 12); ctx.clip();
+      ctx.drawImage(img, sx, sy, minSide, minSide, 80, itemY + 20, 150, 150);
+      ctx.restore();
+    } catch(e) {}
+
+    ctx.fillStyle = '#2B3A21'; ctx.font = 'bold 32px "Kaiti SC", sans-serif';
+    ctx.fillText(r.breed, 260, itemY + 60);
+    
+    ctx.fillStyle = '#5C6B52'; ctx.font = '22px "Kaiti SC", sans-serif';
+    ctx.fillText(`📍 ${r.location || '未知地点'} · ${r.date}`, 260, itemY + 100);
+    
+    const tags = [...(r.personality||[]), ...(r.voice||[]), ...(r.appetite||[]), ...(r.vibe||[])].slice(0, 3);
+    let tagX = 260; ctx.font = '20px "Kaiti SC", sans-serif';
+    tags.forEach(tag => {
+      const tagW = ctx.measureText(tag).width + 20;
+      ctx.fillStyle = '#C8D1B0'; roundRect(ctx, tagX, itemY + 120, tagW, 34, 6); ctx.fill();
+      ctx.fillStyle = '#2B3A21'; ctx.fillText(tag, tagX + 10, itemY + 144);
+      tagX += tagW + 10;
+    });
+  }
+
+  ctx.fillStyle = '#5C6B52'; ctx.font = 'bold 28px "Kaiti SC", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('今天遇见猫咪了吗 🐾', W / 2, H - 60);
+  ctx.textAlign = 'left';
+
+  showShareImage(canvas.toDataURL('image/jpeg', 0.85));
+}
+
+function showShareImage(dataUrl) {
+  const shareImg = $('share-image');
+  if (shareImg) {
+    shareImg.src = dataUrl;
+    shareOverlay.classList.add('show');
+  }
+}
+
+if ($('btn-share-gallery')) {
+  $('btn-share-gallery').addEventListener('click', generateGalleryImage);
+}
 
 initCustomWords();
 updateStat();
