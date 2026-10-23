@@ -545,8 +545,17 @@ function renderGallery() {
     if (Array.isArray(r.notes) && r.notes.length > 0) latestNote = r.notes[r.notes.length - 1].text;
     else if (typeof r.notes === 'string' && r.notes) latestNote = r.notes;
 
-    let days = 0; const startDate = r.createdAt || r.lastSeen; 
-    if (startDate) days = Math.floor((new Date() - new Date(startDate)) / (1000 * 60 * 60 * 24));
+       let days = 0; 
+    const startStr = r.createdAt || r.lastSeen;
+    if (startStr) {
+      const startDate = new Date(startStr);
+      if (!isNaN(startDate.getTime())) {
+        const diffMs = new Date() - startDate;
+        if (diffMs >= 0) {
+          days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        }
+      }
+    }
     
     let daysBadge = '';
     if (days >= 15) {
@@ -555,6 +564,9 @@ function renderGallery() {
       daysBadge = `<span class="badge-days" style="background:hsl(${hue}, 60%, 92%); color:hsl(${hue}, 60%, 30%); border: 1px solid hsl(${hue}, 60%, 55%);">🌈 已收录 ${days} 天</span>`;
     } else if (days > 0) {
       daysBadge = `<span class="badge-days" style="background:var(--paper); color:var(--ink2); border: 1px solid var(--line);">已收录 ${days} 天</span>`;
+    } else {
+      // 🌟 新增：哪怕不到1天，也会显示“今天相遇”
+      daysBadge = `<span class="badge-days" style="background:var(--paper); color:var(--ink2); border: 1px solid var(--line);">今天相遇</span>`;
     }
 
     let cover = (r.photos && r.photos.length > 0) ? r.photos[0] : r.photo;
