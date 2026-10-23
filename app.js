@@ -557,7 +557,6 @@ function renderGallery() {
       daysBadge = `<span class="badge-days" style="background:var(--paper); color:var(--ink2); border: 1px solid var(--line);">已收录 ${days} 天</span>`;
     }
 
-    // 🌟 获取封面和角标
     let cover = (r.photos && r.photos.length > 0) ? r.photos[0] : r.photo;
     let photoCount = (r.photos && r.photos.length > 1) ? r.photos.length : 0;
     let multiBadge = photoCount ? `<div style="position:absolute; right:5px; top:5px; background:rgba(0,0,0,0.5); color:#fff; font-size:11px; padding:2px 6px; border-radius:10px; backdrop-filter:blur(2px; -webkit-backdrop-filter:blur(2px);">${photoCount}张</div>` : '';
@@ -653,6 +652,7 @@ function loadImageAsync(src) {
   });
 }
 
+// 🌟 生成单张卡片海报 (已修复重叠并添加二维码)
 async function generateSingleCardImage(record) {
   toast('正在生成分享图...');
   const canvas = document.createElement('canvas');
@@ -660,6 +660,7 @@ async function generateSingleCardImage(record) {
   const W = 800, H = 1100; 
   canvas.width = W; canvas.height = H;
 
+  // 背景
   ctx.fillStyle = '#DCE0C8'; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = 'rgba(0,0,0,0.03)';
   for(let i=0; i<2000; i++){ ctx.fillRect(Math.random()*W, Math.random()*H, 2, 2); }
@@ -670,15 +671,17 @@ async function generateSingleCardImage(record) {
   ctx.rotate(-1.5 * Math.PI / 180); 
   ctx.translate(-W/2, -H/2);
 
+  // 白色卡片底
   ctx.fillStyle = '#F5F6EE'; 
   ctx.shadowColor = 'rgba(0,0,0,0.15)'; ctx.shadowBlur = 20; ctx.shadowOffsetX = 5; ctx.shadowOffsetY = 5;
   ctx.fillRect(cardX, cardY, cardW, cardH);
   ctx.shadowColor = 'transparent';
 
+  // 绘制图片
   let cover = (record.photos && record.photos.length > 0) ? record.photos[0] : record.photo;
+  const imgSize = cardW - 40;
   try {
     const img = await loadImageAsync(cover);
-    const imgSize = cardW - 40;
     const minSide = Math.min(img.width, img.height);
     const sx = (img.width - minSide) / 2, sy = (img.height - minSide) / 2;
     ctx.drawImage(img, sx, sy, minSide, minSide, cardX + 20, cardY + 20, imgSize, imgSize);
@@ -686,11 +689,15 @@ async function generateSingleCardImage(record) {
     ctx.fillStyle = '#C8D1B0'; ctx.fillRect(cardX+20, cardY+20, cardW-40, cardW-40);
   }
 
-  const textX = cardX + 40; let textY = cardY + cardW + 20;
+  // 文字起始位置
+  const textX = cardX + 40; 
+  let textY = cardY + 20 + imgSize + 50;
   
+  // 名字
   ctx.fillStyle = '#2B3A21'; ctx.font = 'bold 48px "Kaiti SC", "Microsoft YaHei", sans-serif';
   ctx.fillText(record.breed, textX, textY);
   
+  // 标签
   textY += 50;
   const tags = [...(record.personality||[]), ...(record.voice||[]), ...(record.appetite||[]), ...(record.vibe||[])].slice(0, 4);
   ctx.font = '24px "Kaiti SC", "Microsoft YaHei", sans-serif';
@@ -699,26 +706,49 @@ async function generateSingleCardImage(record) {
     const tagW = ctx.measureText(tag).width + 30;
     ctx.fillStyle = '#C8D1B0'; roundRect(ctx, tagX, textY - 25, tagW, 40, 8); ctx.fill();
     ctx.fillStyle = '#2B3A21'; ctx.fillText(tag, tagX + 15, textY);
-    tagX += tagW + 15; if(tagX > W - 200) { tagX = textX; textY += 55; }
+    tagX += tagW + 15; 
+    if(tagX > W - 200) { tagX = textX; textY += 55; }
   });
 
-  textY += 60;
+  // 地点时间
+  textY += 50;
   ctx.fillStyle = '#5C6B52'; ctx.font = '24px "Kaiti SC", "Microsoft YaHei", sans-serif';
   ctx.fillText(`📍 ${record.location || '未知地点'} · ${record.date}`, textX, textY);
 
+  // 备注 (防重叠：如果文字太长则截断)
   if (record.notes && record.notes.length > 0) {
-    textY += 50; ctx.fillStyle = '#465B36'; ctx.font = 'italic 26px "Kaiti SC", "Microsoft YaHei", sans-serif';
-    const lastNote = record.notes[record.notes.length - 1].text;
+    textY += 50; 
+    ctx.fillStyle = '#465B36'; 
+    ctx.font = 'italic 26px "Kaiti SC", "Microsoft YaHei", sans-serif';
+    let lastNote = record.notes[record.notes.length - 1].text;
+    if (lastNote.length > 36) lastNote = lastNote.substring(0, 36) + '...';
     wrapText(ctx, `💌 ${lastNote}`, textX, textY, cardW - 80, 36);
   }
 
-  ctx.fillStyle = '#465B36'; ctx.font = 'bold 28px "Kaiti SC", sans-serif';
-  ctx.fillText('今天遇见猫咪了吗 🐾', textX, cardY + cardH - 40);
+  // 🌟 绘制底部：文字 + 二维码
+  const bottomY = cardY + cardH - 40;
+  
+  // 1. 底部文字
+  ctx.fillStyle = '#465B36'; 
+  ctx.font = 'bold 24px "Kaiti SC", sans-serif';
+  ctx.fillText('—— 记录来自 今天遇见猫咪了吗 🐾', textX, bottomY);
+
+  // 2. 绘制二维码 (使用在线 API)
+  try {
+    const currentUrl = 'https://cappo88.github.io/life-side-quest-animals/';
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl)}`;
+    const qrImg = await loadImageAsync(qrUrl);
+    // 绘制在右下角
+    ctx.drawImage(qrImg, cardX + cardW - 120, bottomY - 70, 80, 80);
+  } catch(e) {
+    console.log('二维码加载失败', e);
+  }
 
   ctx.restore();
   showShareImage(canvas.toDataURL('image/jpeg', 0.9));
 }
 
+// 🌟 生成整个图鉴列表海报 (同时也加了二维码)
 async function generateGalleryImage() {
   const records = getRecords();
   if (!records.length) { toast('还没有记录哦'); return; }
@@ -727,7 +757,8 @@ async function generateGalleryImage() {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   const W = 800;
-  const H = 200 + Math.min(records.length, 10) * 220 + 150; 
+  // 增加一点底部高度给二维码和文字
+  const H = 200 + Math.min(records.length, 10) * 220 + 180; 
   canvas.width = W; canvas.height = H;
 
   ctx.fillStyle = '#DCE0C8'; ctx.fillRect(0, 0, W, H);
@@ -773,9 +804,21 @@ async function generateGalleryImage() {
     });
   }
 
-  ctx.fillStyle = '#5C6B52'; ctx.font = 'bold 28px "Kaiti SC", sans-serif'; ctx.textAlign = 'center';
-  ctx.fillText('今天遇见猫咪了吗 🐾', W / 2, H - 60);
-  ctx.textAlign = 'left';
+  // 🌟 长图底部统一排版
+  const bottomY = H - 60;
+  
+  // 左侧文字
+  ctx.fillStyle = '#5C6B52'; 
+  ctx.font = 'bold 24px "Kaiti SC", sans-serif'; 
+  ctx.fillText('—— 记录来自 今天遇见猫咪了吗 🐾', 60, bottomY);
+
+  // 右侧二维码
+  try {
+    const currentUrl = 'https://cappo88.github.io/life-side-quest-animals/';
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl)}`;
+    const qrImg = await loadImageAsync(qrUrl);
+    ctx.drawImage(qrImg, W - 150, bottomY - 80, 80, 80);
+  } catch(e) {}
 
   showShareImage(canvas.toDataURL('image/jpeg', 0.85));
 }
