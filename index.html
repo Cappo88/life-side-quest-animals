@@ -71,22 +71,26 @@ body{
 
 .result-head{padding:40px 0 16px;}
 
-/* 核心改动：多图横向滑动相册 */
+/* 🌟 多图横向滑动相册（图片缩小，居中留白） */
 .photo-gallery-scroll {
-  width: 100%; overflow-x: auto; scroll-snap-type: x mandatory;
-  padding-bottom: 10px; -webkit-overflow-scrolling: touch;
+  width: calc(100% + 40px); 
+  margin-left: -20px; 
+  overflow-x: auto; scroll-snap-type: x mandatory;
+  padding: 10px 20px 20px; 
+  -webkit-overflow-scrolling: touch;
 }
 .photo-gallery-scroll::-webkit-scrollbar { display: none; }
-.photo-gallery-track { display: flex; gap: 15px; padding: 0 5px; }
+.photo-gallery-track { display: flex; gap: 15px; }
 .photo-gallery-track .photo-card {
-  min-width: 85%; /* 露出下一张的一小部分提示可以滑动 */
+  min-width: 260px; 
+  max-width: 300px;
   flex-shrink: 0; scroll-snap-align: center;
   position:relative; border-radius:4px; overflow:hidden; border: 8px solid var(--white); 
   box-shadow: 0 4px 15px rgba(0,0,0,0.15), 2px 2px 0 var(--line); aspect-ratio:1/1; background:var(--orangeL);
-  transform: rotate(-1deg);
+  transform: rotate(-1deg); 
 }
 .photo-gallery-track .photo-card img{width:100%;height:100%;object-fit:cover;display:block;}
-.photo-stamp{position:absolute;right:10px;bottom:10px;background:var(--white);color:var(--orange);font-size:13px;font-weight:800;letter-spacing:.1em;padding:7px 14px;border-radius:99px;border: 1.5px solid var(--orange); transform: rotate(-5deg); box-shadow: 2px 2px 0 rgba(0,0,0,0.1);}
+.photo-stamp{position:absolute;right:10px;bottom:10px;background:var(--white);color:var(--orange);font-size:12px;font-weight:800;letter-spacing:.1em;padding:5px 10px;border-radius:99px;border: 1.5px solid var(--orange); transform: rotate(-5deg); box-shadow: 2px 2px 0 rgba(0,0,0,0.1);}
 .del-photo-btn {
   position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9);
   border: 1.5px solid var(--orange); color: var(--orange); width: 28px; height: 28px;
@@ -94,7 +98,7 @@ body{
   z-index: 10; cursor: pointer; box-shadow: 2px 2px 0 rgba(0,0,0,0.1); font-size: 14px;
 }
 .add-photo-card {
-  min-width: 85%; border: 2px dashed var(--line); border-radius: 4px;
+  min-width: 260px; max-width: 300px; border: 2px dashed var(--line); border-radius: 4px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   background: var(--white); color: var(--ink2); cursor: pointer; aspect-ratio: 1/1;
   flex-shrink: 0; scroll-snap-align: center; box-shadow: 2px 2px 0 var(--line);
@@ -186,9 +190,7 @@ body.view-result .floating-save { display: block !important; }
 .deco-left { left: -15px; }
 .deco-right { right: -15px; }
 
-/* =========================================
-   🌟 分享海报弹窗样式
-   ========================================= */
+/* 分享海报弹窗样式 */
 .share-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999999;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -260,7 +262,6 @@ body.view-result .floating-save { display: block !important; }
       <span class="task-chip done" id="result-status-chip">✓ 记录完成</span>
     </div>
     
-    <!-- 多图横向滑动相册 -->
     <div class="photo-gallery-scroll">
       <div class="photo-gallery-track" id="result-photos-container"></div>
     </div>
@@ -345,10 +346,7 @@ body.view-result .floating-save { display: block !important; }
     <div id="notes-history" class="notes-history-box" style="display: none;"></div>
     <input class="text-input" id="notes-input" placeholder="在这里写下新的话…" maxlength="50">
 
-    <div id="history-panel" style="display: none; margin-top: 20px; padding: 15px; background: var(--white); border: 1.5px dashed var(--line); border-radius: 12px;">
-      <div style="font-size: 13px; font-weight: bold; color: var(--orange); margin-bottom: 8px;">这只伙伴的修改记录：</div>
-      <ul id="history-list" style="padding-left: 16px; font-size: 12px; color: var(--ink2); line-height: 1.8;"></ul>
-    </div>
+    <!-- 🌟 已删除修改记录面板 -->
 
     <div style="margin-top: 50px; margin-bottom: 100px; text-align: center;">
       <button id="btn-again" style="background: none; border: none; color: var(--ink2); font-size: 14px; font-family: inherit; cursor: pointer; text-decoration: underline; opacity: 0.7;">放弃当前内容并开启新图鉴</button>
@@ -371,17 +369,14 @@ body.view-result .floating-save { display: block !important; }
   </section>
 </div>
 
-<!-- 悬浮按钮 -->
 <button class="btn-main floating-save" id="btn-save">收进图鉴</button>
 
-<!-- 底部装饰图 -->
 <img src="plant.png" class="deco-bottom deco-left" alt="" onerror="this.style.display='none'">
 <img src="cat.png" class="deco-bottom deco-right" alt="" onerror="this.style.display='none'">
 
 <input type="file" id="file-input" accept="image/*" hidden>
 <div class="toast" id="toast"></div>
 
-<!-- 分享弹窗 -->
 <div class="share-overlay" id="share-overlay">
   <div class="share-tip">长按下方图片保存到手机相册 👇</div>
   <div class="share-img-container">
